@@ -1,0 +1,99 @@
+# DM Kit 快速上手
+
+## 简介
+
+在任务型对话系统（Task-Oriented Dialogue System）中，一般包括了以下几个模块：
+
+* Automatic Speech Recognition（ASR），即语音识别模块，将音频转化为文本输入。
+* Natural Language Understanding（NLU），即自然语言理解模块，通过分析文本输入，解析得到对话意图与槽位（Intent + Slots）。
+* Dialog Manager（DM），即对话管理模块，根据NLU模块分析得到的意图+槽位值，结合当前对话状态，执行对应的动作并返回结果。其中执行的动作可能涉及到对内部或外部知识库的查询。
+* Natural Language Generation（NLG），即自然语言生成。目前一般采用模板的形式。
+* Text To Speech（TTS），即文字转语音模块，将对话系统的文本输出转化为音频。
+
+DM Kit关注其中的对话管理模块（Dialog Manager），解决对话系统中状态管理、对话逻辑处理等问题。在实际应用中，单个垂类下对话逻辑一般都是根据NLU结果中意图与槽位值，结合当前对话状态，确定需要进行处理的子流程。子流程或者返回固定话术结果，或者根据NLU中槽位值与对话状态访问内部或外部知识库获取资源数据并生成话术结果返回，在返回结果的同时也对对话状态进行更新。我们将这部分对话处理逻辑进行抽象，提供一个通过配置快速构建对话流程，可复用的对话管理模块，即Reusable Dialog Manager。
+
+## 架构
+
+![DM Kit架构](dmkit.png)
+
+如上图所示，系统核心是一个对话管理引擎，在对话管理引擎的基础上，每个垂类bot的实现都是通过一个配置文件来对对话逻辑和流程进行描述，这样每个垂类仅需要关注自身对话逻辑，不需要重复开发框架代码。一个垂类的配置包括了一系列的policy，每个policy包括三部分：触发条件（trigger），参数变量（params），以及输出（output）。
+
+* 触发条件（trigger）包括了NLU解析得到的意图+槽位值，以及当前的对话状态，限定了该policy被触发的条件；
+
+* 参数变量（params）是该policy运行需要的一些数据变量的定义，可以包括NLU解析结果中的槽位值、session中的变量值以及函数运行结果等。这里的函数需要在系统中进行注册，例如发送网络请求获取数据这样的函数，这些通用的函数在各个垂类间都能共享，特殊情况下个别垂类会需要定制化注册自己的函数；
+
+* 输出结果（output）即为该policy运行返回作为对话系统的结果，可以包括话术tts及指令，同时还可对对话状态进行更新以及写入session变量。这里的结果可以使用已定义的参数变量进行模板填充。
+
+在垂类基础配置之上，还衍生出了一系列扩展功能。例如我们对一些仅需要触发条件及输出的垂类，我们可以设计更精简的语法，使用更简洁的配置描述对话policy；对于多状态跳转的场景，我们引入了可视化的编辑工具，来描述对话跳转逻辑。精简语法表示及可视化编辑都可以自动转化为对话管理引擎可执行的配置，在系统中运行。
+
+## 详细配置说明
+
+本节详细介绍实现垂类功能的配置语法。所有垂类的配置均位于模块源码conf/app/目录下。
+
+### 垂类注册
+
+products.json为全局垂类注册配置文件，默认采用已"default"为key的配置项，该配置项中每个垂类已botid为key，注册添加垂类详细配置，配置字段解释如下：
+
+| 字段             |含义                         |
+|-----------------|-----------------------------|
+|conf_path        |垂类policy配置文件地址          |
+|score            |垂类排序静态分数，可设置为固定值1  |
+
+### 垂类配置
+
+单个垂类配置文件包括了一系列policy，每个policy字段说明如下：
+
+| 字段                             | 类型         |说明                            |
+|---------------------------------|--------------|-------------------------------|
+|trigger                          |object        | 触发节点，如果一个query满足多个policy的触发条件，则优先取status匹配的policy，再根据slot取覆盖个数最多的 |
+|+intent                          |string        | 触发所需NLU意图 |
+|+slot                            |list          | 触发所需槽位值列表|
+|+state                           |string        | 触发所需状态值，即上一轮对话session中保存的state字段值 |
+|params                           |list          | 变量列表 |
+|+params[].name                   |string        | 变量名，后定义的变量可以使用已定义的变量进行模板填充，result节点中的值也可以使用变量进行模板填充。变量的使用格式为{%name%} |
+|+params[].type                   |string        | 变量类型，可能的类型为slot_val,request_param,session_obj,func_val |
+|+params[].value                  |string        | 变量定义值 |
+|+params[].required               |bool          | 是否必须，如果必须的变量为空值时，该policy将不会返回结果 |
+|output                           |list          | 返回结果节点，可定义多个output，最终输出会按顺序选择第一个满足assertion条件的output |
+|+output[].assertion              |list          | 使用该output的前提条件列表 |
+|+output[].assertion[].type       |string        | 条件类型 |
+|+output[].assertion[].value      |string        | 条件值 |
+|+output[].session                |object        | 需要保存的session数据，用于更新对话状态及记录上下文 |
+|+output[].session.state          |string        | 更新的对话状态值 |
+|+output[].session.context        |kvdict        | 写入session的变量节点，该节点下的key+value数据会存入session，再下一轮中可以在变量定义中使用 |
+|+output[].result                 |list          | 返回结果中result节点，多个result作为数组元素一起返回 |
+|+output[].result[].type          |string        | result类型 |
+|+output[].result[].value         |string        | result值            |
+
+#### params中变量类型列表及其说明：
+
+| type     |说明           |
+|----------|--------------|
+| slot_val | 从qu结果中取对应的slot值，有归一化值优先取归一化值。当对应tag值存在多个slot时，value值支持tag后按分隔符","添加下标i取对应tag的第i个值（索引从0开始） |
+| request_param | 取请求参数对应的字段 |
+| session_obj | 上一轮对话session结果中objects结构体中对应的字段 |
+| func_val | 调用用户定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
+| qu_intent | NLU结果中的intent值 |
+| session_state | 当前对话session中的state值 |
+
+#### result中assertion类型说明：
+
+| type     |说明           |
+|----------|--------------|
+| empty  | value值非空  |
+| not_empty  | value值为空  |
+| in  | value值以","切分，第一个元素在从第二个元素开始的列表中  |
+| not_in | value值以","切分，第一个元素不在从第二个元素开始的列表中  |
+| eq |  value值以","切分，第一个元素等于第二个元素 |
+| gt  | value值以","切分，第一个数字大于第二个数字  |
+| ge | value值以","切分，第一个数字大于等于第二个数字  |
+
+### 精简语法及可视化配置
+
+* 在默认基础配置之上，有能力的开发者可以自行设计使用更简洁的配置描述对话policy并转化为基础配置进行加载。
+* 对于多状态跳转的场景，可以引入了可视化的编辑工具，来描述对话跳转逻辑。这里我们提供了一个使用[mxgraph](https://github.com/jgraph/mxgraph)进行可视化配置的样例，文档参考：[可视化配置工具](visual_tool.md)
+
+## 服务接口
+
+* DM Kit服务监听端口及访问路径等参数可通过conf/gflags.conf文件进行配置
+* 服务接收Post数据协议与[UNIT2.0接口协议](http://ai.baidu.com/docs#/UNIT-v2-API/top)兼容。DM Kit定义custom_reply类型为DM_RESULT时，返回内容为DM Kit返回output结果。

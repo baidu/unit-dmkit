@@ -1,0 +1,372 @@
+[
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您想查询几月份的流量？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "001"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_CHECK_DATA_USAGE", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [
+          {
+            "type": "ge", 
+            "value": "{%left%},1"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您的省内流量2GB,已用流量为{%usage%}GB；剩余流量为{%left%}G，全国流量包1GB，已用流量为1GB，剩余流量为0GB"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }, 
+      {
+        "assertion": [
+          {
+            "type": "gt", 
+            "value": "1,{%left%}"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB"
+          }, 
+          {
+            "type": "tts", 
+            "value": "发现您的流量余额已经不足了，您是否需要续订流量包呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "usage", 
+        "type": "func_val", 
+        "value": "demo_get_cellular_data_usage:{%time%}"
+      }, 
+      {
+        "name": "left", 
+        "type": "func_val", 
+        "value": "demo_get_cellular_data_left:{%time%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_CHECK_DATA_USAGE", 
+      "slots": [
+        "user_time"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [
+          {
+            "type": "ge", 
+            "value": "{%left%},1"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您的省内流量2GB,已用流量为{%usage%}GB；剩余流量为{%left%}G，全国流量包1GB，已用流量为1GB，剩余流量为0GB"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }, 
+      {
+        "assertion": [
+          {
+            "type": "gt", 
+            "value": "1,{%left%}"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB"
+          }, 
+          {
+            "type": "tts", 
+            "value": "发现您的流量余额已经不足了，您是否需要续订流量包呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "usage", 
+        "type": "func_val", 
+        "value": "demo_get_cellular_data_usage:{%time%}"
+      }, 
+      {
+        "name": "left", 
+        "type": "func_val", 
+        "value": "demo_get_cellular_data_left:{%time%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_CHECK_DATA_USAGE", 
+      "slots": [
+        "user_time"
+      ], 
+      "state": "001"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "王女士您好，我们有省内，全国，夜间三种流量包，您是要续订什么流量包？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "003"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问还有什么可以帮助您的吗"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "007"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": "003"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的，{%type%}有如下选择：{%options%}。请问您想续订哪种？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "005"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_package_type"
+      }, 
+      {
+        "name": "options", 
+        "type": "func_val", 
+        "value": "demo_get_package_options:{%type%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_DATA_PACKAGE", 
+      "slots": [
+        "user_package_type"
+      ], 
+      "state": "004"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，您是想续订{%name%}的{%type%}吗？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "006"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_package_type"
+      }, 
+      {
+        "name": "name", 
+        "type": "slot_val", 
+        "value": "user_package_name"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_DATA_PACKAGE", 
+      "slots": [
+        "user_package_type", 
+        "user_package_name"
+      ], 
+      "state": "005"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问还有什么可以帮助您的吗"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "007"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "006"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "王女士您好，我们有省内，全国，夜间三种流量包，您是要续订什么流量包？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_BOOK_DATA_PACKAGE", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "王女士您好，我们有省内，全国，夜间三种流量包，您是要续订什么流量包？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_BOOK_DATA_PACKAGE", 
+      "slots": [], 
+      "state": "003"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的，很高兴为您服务"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "008"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": "007"
+    }
+  }
+]

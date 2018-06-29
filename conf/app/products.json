@@ -1,0 +1,8 @@
+{
+    "default": {
+        "1234": {
+            "score": 1,
+            "conf_path": "conf/app/demo/cellular_data.json"
+        }
+    }
+}

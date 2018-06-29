@@ -1,0 +1,11 @@
+syntax="proto2";
+package dmkit;
+
+option cc_generic_services = true;
+
+message HttpRequest { };
+message HttpResponse { };
+
+service HttpService {
+  rpc run(HttpRequest) returns (HttpResponse);
+};

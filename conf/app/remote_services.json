@@ -1,0 +1,11 @@
+{
+    "unit_bot": {
+        "naming_service_url": "https://aip.baidubce.com",
+        "load_balancer_name": "",
+        "protocol": "http",
+        "timeout_ms": 2000,
+        "retry": 1,
+        "headers": {
+        }
+    }
+}

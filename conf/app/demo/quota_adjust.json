@@ -1,0 +1,525 @@
+[
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": [
+              "您需要调整临时额度还是固定额度？", 
+              "请问您要调整固定额度还是临时额度呢？"
+            ]
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "001"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [
+          {
+            "type": "eq", 
+            "value": "{%type%},临时"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "临时额度只能提升，请问您是否需要提升临时额度？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "007"
+        }
+      }, 
+      {
+        "assertion": [
+          {
+            "type": "eq", 
+            "value": "{%type%},固定"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您需要提升额度还是降低额度？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [
+          {
+            "type": "eq", 
+            "value": "{%type%},临时"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "临时额度只能提升，请问您是否需要提升临时额度？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "007"
+        }
+      }, 
+      {
+        "assertion": [
+          {
+            "type": "eq", 
+            "value": "{%type%},固定"
+          }
+        ], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您需要提升额度还是降低额度？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type"
+      ], 
+      "state": "001"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问您要{%method%}到多少呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_method"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问您要{%method%}到多少呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_method"
+      ], 
+      "state": "010"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问您要{%method%}到多少呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_method"
+      ], 
+      "state": "002"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您确认要将银行卡{%type%}{%method%}至{%amount%}吗？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }, 
+      {
+        "name": "amount", 
+        "type": "slot_val", 
+        "value": "user_amount"
+      }, 
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_method", 
+        "user_amount"
+      ], 
+      "state": "003"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您确认要将银行卡{%type%}{%method%}至{%amount%}吗？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }, 
+      {
+        "name": "amount", 
+        "type": "slot_val", 
+        "value": "user_amount"
+      }, 
+      {
+        "name": "type", 
+        "type": "slot_val", 
+        "value": "user_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_method", 
+        "user_amount"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": [
+              "很高兴为您服务，还有其他需要帮助的吗？", 
+              "好的，请问还有其他能帮到您的吗？"
+            ]
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "005"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "004"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": [
+              "很高兴为您服务，还有其他需要帮助的吗？", 
+              "好的，请问还有其他能帮到您的吗？"
+            ]
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "005"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "011"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "很高兴为您服务，王女士再见！"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "006"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": "009"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "很高兴为您服务，王女士再见！"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "006"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": "005"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "好的王女士，请问您要提升到多少呢？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "008"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "007"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "不好意思，临时额度只能提升，请问还有其他需要帮助的吗？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "009"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您是要{%method%}固定额度还是临时额度？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "010"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "method", 
+        "type": "slot_val", 
+        "value": "user_method"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_method"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您确认要将银行卡临时额度提升至{%amount%}吗？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "011"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "amount", 
+        "type": "slot_val", 
+        "value": "user_amount"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_ADJUST_QUOTA", 
+      "slots": [
+        "user_type", 
+        "user_amount"
+      ], 
+      "state": "008"
+    }
+  }
+]
