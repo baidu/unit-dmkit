@@ -39,7 +39,7 @@ elif [ $OS = centos ]; then
     echo "Installing dependencies for CentOS..."
     sudo yum install epel-release
     sudo yum install git gcc-c++ make openssl-devel
-    sudo yum install gflags-devel protobuf-devel protobuf-compiler leveldb-devel
+    sudo yum install gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
 else
     echo "Skipping dependencies installation..."
 fi
