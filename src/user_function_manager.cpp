@@ -26,10 +26,9 @@ UserFunctionManager::UserFunctionManager() {
 }
 
 UserFunctionManager::~UserFunctionManager() {
-    if (this->_user_function_map != nullptr) {
-        delete this->_user_function_map;
-        this->_user_function_map = nullptr;
-    }
+    delete this->_user_function_map;
+    this->_user_function_map = nullptr;
+    
     if (this->_init) {
         curl_global_cleanup();
         this->_init = false;

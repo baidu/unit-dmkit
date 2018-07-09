@@ -42,15 +42,11 @@ AppContainer::AppContainer() {
 }
 
 AppContainer::~AppContainer() {
-    if (nullptr != this->_application) {
-        delete this->_application;
-        this->_application = nullptr;
-    }
-    
-    if (nullptr != this->_data_factory) {
-        delete this->_data_factory;
-        this->_data_factory = nullptr;
-    }
+    delete this->_application;
+    this->_application = nullptr;
+
+    delete this->_data_factory;
+    this->_data_factory = nullptr;
 }
 
 int AppContainer::load_application() {
