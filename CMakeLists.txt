@@ -74,15 +74,12 @@ if ((NOT LEVELDB_INCLUDE_PATH) OR (NOT LEVELDB_LIB))
 endif()
 include_directories(${LEVELDB_INCLUDE_PATH})
 
-find_library(SSL_LIB NAMES ssl)
-if (NOT SSL_LIB)
-    message(FATAL_ERROR "Fail to find ssl")
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(OPENSSL_ROOT_DIR
+        "/usr/local/opt/openssl"    # Homebrew installed OpenSSL
+        )
 endif()
-
-find_library(CRYPTO_LIB NAMES crypto)
-if (NOT CRYPTO_LIB)
-    message(FATAL_ERROR "Fail to find crypto")
-endif()
+include(FindOpenSSL)
 
 find_library(CURL_LIB NAMES curl)
 if (NOT CURL_LIB)
@@ -94,8 +91,8 @@ set(DYNAMIC_LIB
     ${GFLAGS_LIBRARY}
     ${PROTOBUF_LIBRARIES}
     ${LEVELDB_LIB}
-    ${SSL_LIB}
-    ${CRYPTO_LIB}
+    ${OPENSSL_LIBRARIES}
+    ${OPENSSL_CRYPTO_LIBRARY}
     ${CURL_LIB}
     dl
     )
