@@ -22,7 +22,7 @@ if [ $OS = mac ]; then
     brew install openssl git gnu-getopt gflags protobuf leveldb cmake openssl
 elif [ $OS = ubuntu ]; then
     echo "Installing dependencies for Ubuntu..."
-    apt-get install git \
+    apt-get install -y git \
         g++ \
         make \
         libssl-dev \
