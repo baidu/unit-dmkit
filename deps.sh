@@ -37,9 +37,9 @@ elif [ $OS = ubuntu ]; then
         libgoogle-perftools-dev
 elif [ $OS = centos ]; then
     echo "Installing dependencies for CentOS..."
-    yum install epel-release
-    yum install git gcc-c++ make openssl-devel
-    yum install gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
+    yum install -y epel-release
+    yum install -y git gcc-c++ make openssl-devel
+    yum install -y gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
 else
     echo "Skipping dependencies installation..."
 fi
@@ -55,8 +55,6 @@ git pull
 
 #build brpc
 echo "Building brpc..."
-#sh config_brpc.sh --headers=/usr/include --libs=/usr/lib
-#make
 mkdir -p _build
 cd _build
 cmake ..
