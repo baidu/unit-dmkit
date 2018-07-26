@@ -55,5 +55,11 @@ git pull
 
 #build brpc
 echo "Building brpc..."
-sh config_brpc.sh --headers=/usr/include --libs=/usr/lib
-make
+#sh config_brpc.sh --headers=/usr/include --libs=/usr/lib
+#make
+mkdir -p _build
+cd _build
+cmake ..
+make -j$JOBS
+
+cd ../../
