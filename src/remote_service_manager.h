@@ -50,6 +50,10 @@ struct RemoteServiceChannel {
     std::string protocol;
     // Rpc channel instance
     brpc::Channel *channel;
+    // timeout in milliseconds
+    int timeout_ms;
+    // retry count
+    int max_retry;
     // Headers for http procotol
     std::vector<std::pair<std::string, std::string>> headers;
 };
@@ -74,14 +78,24 @@ public:
 
 private:
     // Http is the most common protocol.
-    int call_http(brpc::Channel* channel,
-                  const std::string& url,
-                  const HttpMethod method,
-                  const std::vector<std::pair<std::string, std::string>>& headers,
-                  const std::string& payload,
-                  std::string& result,
-                  std::string& remote_side,
-                  int& latency) const;
+   int call_http_by_brpc(brpc::Channel* channel,
+                         const std::string& url,
+                         const HttpMethod method,
+                         const std::vector<std::pair<std::string, std::string>>& headers,
+                         const std::string& payload,
+                         std::string& result,
+                         std::string& remote_side,
+                         int& latency) const;
+
+    int call_http_by_curl(const std::string& url,
+                          const HttpMethod method,
+                          const std::vector<std::pair<std::string, std::string>>& headers,
+                          const std::string& payload,
+                          const int timeout_ms,
+                          const int max_retry,
+                          std::string& result,
+                          std::string& remote_side,
+                          int& latency) const;
 
     butil::FlatMap<std::string, RemoteServiceChannel> _channel_map;
 };
@@ -89,3 +103,4 @@ private:
 } // namespace dmkit
 
 #endif  //DMKIT_THREAD_DATA_BASE_H
+

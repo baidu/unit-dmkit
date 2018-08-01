@@ -14,6 +14,7 @@
 
 #include "remote_service_manager.h"
 #include <cstdio>
+#include <curl/curl.h>
 #include <string>
 #include "app_log.h"
 #include "rapidjson.h"
@@ -103,6 +104,12 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
             continue;
         }
         std::string protocol = setting_iter->value.GetString();
+        // Client to use for sending request.
+        setting_iter = settings.FindMember("client");
+        std::string client;
+        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsString()) {
+            client = setting_iter->value.GetString();    
+        }
         // Timeout value in millisecond.
         setting_iter = settings.FindMember("timeout_ms");
         if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsInt()) {
@@ -122,7 +129,7 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
         // Headers for a http request.
         std::vector<std::pair<std::string, std::string>> headers;
         setting_iter = settings.FindMember("headers");
-        if (setting_iter != settings.MemberEnd() && !setting_iter->value.IsObject()) {
+        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsObject()) {
             const rapidjson::Value& obj_headers = setting_iter->value;
             rapidjson::Value::ConstMemberIterator header_iter;
             for (header_iter = obj_headers.MemberBegin(); 
@@ -140,12 +147,19 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
 
         brpc::Channel* rpc_channel = nullptr;
         if (protocol == "http") {
-            rpc_channel = new brpc::Channel();
-            brpc::ChannelOptions options;
-            options.protocol = brpc::PROTOCOL_HTTP;
-            options.timeout_ms = timeout_ms;
-            options.max_retry = retry;
-            rpc_channel->Init(naming_service_url.c_str(), load_balancer_name.c_str(), &options);
+            if (client.empty() || client == "brpc") {
+                rpc_channel = new brpc::Channel();
+                brpc::ChannelOptions options;
+                options.protocol = brpc::PROTOCOL_HTTP;
+                options.timeout_ms = timeout_ms;
+                options.max_retry = retry;
+                rpc_channel->Init(naming_service_url.c_str(), load_balancer_name.c_str(), &options);
+            } else if (client == "curl") {
+                // curl does not need to init rpc channel
+            } else {
+                APP_LOG(ERROR) << "Unsupported client value [" << client << "], skipped...";
+                continue;
+            }
         } else {
             APP_LOG(ERROR) << "Unsupported protocol [" << protocol
                 << "] for service [" << service_name << "], skipped...";
@@ -156,6 +170,8 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
             .name = service_name,
             .protocol = protocol,
             .channel = rpc_channel,
+            .timeout_ms = timeout_ms,
+            .max_retry = retry,
             .headers = headers
         };
         this->_channel_map.insert(service_name, service_channel);
@@ -179,14 +195,26 @@ int RemoteServiceManager::call(const std::string& service_name,
     std::string remote_side;
     int latency = 0;
     if (service_channel->protocol == "http") {
-        ret = this->call_http(service_channel->channel,
-                               params.url,
-                               params.http_method,
-                               service_channel->headers,
-                               params.payload,
-                               result.result,
-                               remote_side,
-                               latency);
+        if (service_channel->channel != nullptr) {
+            ret = this->call_http_by_brpc(service_channel->channel,
+                                          params.url,
+                                          params.http_method,
+                                          service_channel->headers,
+                                          params.payload,
+                                          result.result,
+                                          remote_side,
+                                          latency);
+        } else {
+            ret = this->call_http_by_curl(params.url,
+                                          params.http_method,
+                                          service_channel->headers,
+                                          params.payload,
+                                          service_channel->timeout_ms,
+                                          service_channel->max_retry,
+                                          result.result,
+                                          remote_side,
+                                          latency);
+        }
     } else {
         APP_LOG(ERROR) << "Remote service call failed. Unknown protocol" << service_channel->protocol;
         ret = -1;
@@ -209,14 +237,14 @@ int RemoteServiceManager::call(const std::string& service_name,
     return ret;
 }
 
-int RemoteServiceManager::call_http(brpc::Channel* channel,
-                                    const std::string& url,
-                                    const HttpMethod method,
-                                    const std::vector<std::pair<std::string, std::string>>& headers,
-                                    const std::string& payload,
-                                    std::string& result,
-                                    std::string& remote_side,
-                                    int& latency) const {
+int RemoteServiceManager::call_http_by_brpc(brpc::Channel* channel,
+                                            const std::string& url,
+                                            const HttpMethod method,
+                                            const std::vector<std::pair<std::string, std::string>>& headers,
+                                            const std::string& payload,
+                                            std::string& result,
+                                            std::string& remote_side,
+                                            int& latency) const {
     brpc::Controller cntl;
     cntl.http_request().uri() = url.c_str();
     if (method == HTTP_METHOD_POST) {
@@ -224,12 +252,18 @@ int RemoteServiceManager::call_http(brpc::Channel* channel,
         cntl.request_attachment().append(payload);    
     }
     for (auto const& header: headers) {
+        if (header.first == "Content-Type" || header.first == "content-type") {
+            cntl.http_request().set_content_type(header.second);
+            continue;
+        }
         cntl.http_request().SetHeader(header.first, header.second);
     }
     
     channel->CallMethod(NULL, &cntl, NULL, NULL, NULL);
     if (cntl.Failed()) {
         APP_LOG(WARNING) << "Call failed, error: " << cntl.ErrorText();
+        remote_side = butil::endpoint2str(cntl.remote_side()).c_str();
+        latency = cntl.latency_us() / 1000;
         return -1;
     }
     result = cntl.response_attachment().to_string();
@@ -237,6 +271,72 @@ int RemoteServiceManager::call_http(brpc::Channel* channel,
     remote_side = butil::endpoint2str(cntl.remote_side()).c_str();
     latency = cntl.latency_us() / 1000;
     
+    return 0;
+}
+
+static size_t curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+    butil::IOBuf* buffer = static_cast<butil::IOBuf*>(userp);
+    size_t realsize = size * nmemb;
+    buffer->append(contents, realsize);
+    return realsize;
+}
+
+int RemoteServiceManager::call_http_by_curl(const std::string& url,
+                                            const HttpMethod method,
+                                            const std::vector<std::pair<std::string, std::string>>& headers,
+                                            const std::string& payload,
+                                            const int timeout_ms,
+                                            const int max_retry,
+                                            std::string& result,
+                                            std::string& remote_side,
+                                            int& latency) const {
+    CURL *curl;
+    CURLcode res;
+    struct curl_slist *curl_headers = nullptr;
+    curl = curl_easy_init();
+    if (!curl) {
+        APP_LOG(ERROR) << "Failed to init curl";
+        return -1;
+    }
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    butil::IOBuf response_buffer; 
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, static_cast<void*>(&response_buffer));
+
+    if (method == HTTP_METHOD_POST) {
+         curl_easy_setopt(curl, CURLOPT_POST, 1L);
+         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, payload.length());
+    }
+
+    for (auto const& header: headers) {
+        std::string header_value = header.first;
+        header_value += ": ";
+        header_value += header.second;
+        curl_headers = curl_slist_append(curl_headers, header_value.c_str());
+    }
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    res = curl_easy_perform(curl);
+    curl_slist_free_all(curl_headers);
+    if(res != CURLE_OK) {
+        APP_LOG(ERROR) << "curl failed, error: " << curl_easy_strerror(res);
+    }
+
+    double total_time;
+    res = curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
+    if (CURLE_OK == res) {
+        latency = total_time * 1000;
+    }
+    char *ip = nullptr;
+    res = curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+    if (CURLE_OK == res && ip != nullptr) {
+        remote_side = ip;
+    }
+
+    curl_easy_cleanup(curl);
+    result = response_buffer.to_string();
+
     return 0;
 }
 
