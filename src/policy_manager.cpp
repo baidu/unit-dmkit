@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -108,7 +108,7 @@ int PolicyManager::init(const char* dir_path, const char* conf_file) {
     this->_conf_file = conf_file;
     this->_product_policy_map = new ProductPolicyMap();
     // 10: bucket_count, initial count of buckets, big enough to avoid resize.
-    // 80: load_factor, element_count * 100 / bucket_count.    
+    // 80: load_factor, element_count * 100 / bucket_count.
     this->_product_policy_map->init(10, 80);
 
     std::string file_path;
@@ -138,7 +138,7 @@ int PolicyManager::init(const char* dir_path, const char* conf_file) {
         return -1;
     }
 
-    for (rapidjson::Value::ConstMemberIterator prod_iter = doc.MemberBegin(); 
+    for (rapidjson::Value::ConstMemberIterator prod_iter = doc.MemberBegin();
             prod_iter != doc.MemberEnd(); ++prod_iter) {
         std::string prod_name = prod_iter->name.GetString();
         if (!prod_iter->value.IsObject()) {
@@ -251,14 +251,14 @@ DomainPolicyMap* PolicyManager::load_product_policy_map(const std::string& produ
     domain_policy_map->init(10, 80);
 
     APP_LOG(TRACE) << "Loading policies for product: " << product_name;
-    for (rapidjson::Value::ConstMemberIterator domain_iter = product_json.MemberBegin(); 
+    for (rapidjson::Value::ConstMemberIterator domain_iter = product_json.MemberBegin();
             domain_iter != product_json.MemberEnd(); ++domain_iter) {
         std::string domain_name = domain_iter->name.GetString();
         const rapidjson::Value& domain_json = domain_iter->value;
         rapidjson::Value::ConstMemberIterator setting_iter;
         setting_iter = domain_json.FindMember("score");
         if (setting_iter == domain_json.MemberEnd() || !setting_iter->value.IsInt()) {
-            APP_LOG(WARNING) << "Failed to parse score for domain " 
+            APP_LOG(WARNING) << "Failed to parse score for domain "
                 << domain_name << " in product " << product_name << ", skipped";
             continue;
         }
@@ -266,16 +266,16 @@ DomainPolicyMap* PolicyManager::load_product_policy_map(const std::string& produ
 
         setting_iter = domain_json.FindMember("conf_path");
         if (setting_iter == domain_json.MemberEnd() || !setting_iter->value.IsString()) {
-            APP_LOG(WARNING) << "Failed to parse conf_path for domain " 
+            APP_LOG(WARNING) << "Failed to parse conf_path for domain "
                 << domain_name << " in product " << product_name << ", skipped";
             continue;
         }
         std::string conf_path = setting_iter->value.GetString();
-        
+
         APP_LOG(TRACE) << "Loading policies for domain " << domain_name << " from " << conf_path;
         DomainPolicy* domain_policy = this->load_domain_policy(domain_name, score, conf_path);
         if (domain_policy == nullptr) {
-            APP_LOG(WARNING) << "Failed to load policy for domain " 
+            APP_LOG(WARNING) << "Failed to load policy for domain "
                 << domain_name << " in product " << product_name << ", skipped";
             continue;
         }
@@ -505,7 +505,7 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
                                                    QuResult* qu_result,
                                                    const PolicyOutputSession& session,
                                                    const RequestContext& context) {
-    // Process parameters                                                       
+    // Process parameters
     std::unordered_map<std::string, std::string> param_map;
     for (auto const& param: policy->params()) {
         APP_LOG(TRACE) << "resolving parameter [" << param.name << "]";

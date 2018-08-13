@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,8 @@ int UserFunctionManager::init() {
     (*_user_function_map)["url_encode"] = user_function::url_encode;
     (*_user_function_map)["service_http_get"] = user_function::service_http_get;
     (*_user_function_map)["service_http_post"] = user_function::service_http_post;
-    
+    (*_user_function_map)["now_strftime"] = user_function::now_strftime;
+
     // Scenario specific functions.
     (*_user_function_map)["demo_get_cellular_data_usage"] = 
             user_function::demo::get_cellular_data_usage;
@@ -78,7 +79,7 @@ int UserFunctionManager::call_user_function(const std::string& func_name,
     try {
         res = (*func_ptr)(args, context, result);
     } catch (const char* msg) {
-        APP_LOG(WARNING) << "Exception calling user function [" 
+        APP_LOG(WARNING) << "Exception calling user function ["
             << func_name << "], exception: " << msg;
         res = -1;
     }

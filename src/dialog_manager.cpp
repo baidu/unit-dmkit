@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ namespace dmkit {
 DialogManager::DialogManager() {
     this->_remote_service_manager = new RemoteServiceManager();
     this->_policy_manager = new PolicyManager();
+    this->_token_manager = new TokenManager();
 }
 
 DialogManager::~DialogManager() {
@@ -34,6 +35,8 @@ DialogManager::~DialogManager() {
     this->_policy_manager = nullptr;
     delete this->_remote_service_manager;
     this->_remote_service_manager = nullptr;
+    delete this->_token_manager;
+    this->_token_manager = nullptr;
 }
 
 int DialogManager::init() {
@@ -45,6 +48,11 @@ int DialogManager::init() {
 
     if (0 != this->_policy_manager->init("conf/app", "products.json")) {
         APP_LOG(ERROR) << "Failed to init _policy_manager";
+        return -1;
+    }
+
+    if (0 != this->_token_manager->init("conf/app", "bot_tokens.json")) {
+        APP_LOG(ERROR) << "Failed to init _token_manager";
         return -1;
     }
     APP_LOG(TRACE) << "_policy_manager init done";
@@ -77,11 +85,25 @@ int DialogManager::run(brpc::Controller* cntl) {
     this->set_log_id(log_id);
     request_doc["log_id"].SetString(log_id.c_str(), log_id.length(), request_doc.GetAllocator());
 
+    // Parsing bot_id from request json
+    if (!request_doc.HasMember("bot_id") || !request_doc["bot_id"].IsString()) {
+        APP_LOG(WARNING) << "Missing bot_id";
+        this->send_error_response(cntl, -1, "Missing bot_id");
+        return 0;
+    }
+    std::string bot_id = request_doc["bot_id"].GetString();
+    
     // Get access_token from request uri.
     std::string access_token;
     const std::string* access_token_ptr = cntl->http_request().uri().GetQuery("access_token");
     if (access_token_ptr != nullptr) {
         access_token = *access_token_ptr;
+    }
+    if (access_token.empty() && this->_token_manager->get_access_token(
+                bot_id, this->_remote_service_manager, access_token) != 0) {
+        APP_LOG(ERROR) << "Failed to get access token";
+        this->send_error_response(cntl, -1, "Failed to get access token");
+        return 0;
     }
 
     request_json = utils::json_to_string(request_doc);
@@ -97,30 +119,30 @@ int DialogManager::run(brpc::Controller* cntl) {
     // Parse unit bot response.
     // In the case something wrong with unit bot response, informs users.
     rapidjson::Document unit_response_doc;
-    if (unit_response_doc.Parse(unit_bot_result.c_str()).HasParseError() 
+    if (unit_response_doc.Parse(unit_bot_result.c_str()).HasParseError()
             || !unit_response_doc.IsObject()) {
         APP_LOG(ERROR) << "Failed to parse unit bot result: " << unit_bot_result;
         this->send_error_response(cntl, -1, "Failed to parse unit bot result");
         return 0;
     }
     if (!unit_response_doc.HasMember("error_code")
-            || !unit_response_doc["error_code"].IsInt() 
+            || !unit_response_doc["error_code"].IsInt()
             || unit_response_doc["error_code"].GetInt() != 0) {
         this->send_json_response(cntl, unit_bot_result);
         return 0;
     }
-    
+
     // Get dmkit session from request. We saved it in the bot session in latest response.
     std::string dm_session;
     if (request_doc.HasMember("bot_session")) {
         std::string request_bot_session = request_doc["bot_session"].GetString();
         rapidjson::Document request_bot_session_doc;
-        if (!request_bot_session_doc.Parse(request_bot_session.c_str()).HasParseError() 
-                && request_bot_session_doc.IsObject() 
+        if (!request_bot_session_doc.Parse(request_bot_session.c_str()).HasParseError()
+                && request_bot_session_doc.IsObject()
                 && request_bot_session_doc.HasMember("dialog_state")
                 && request_bot_session_doc["dialog_state"].HasMember("contexts")
                 && request_bot_session_doc["dialog_state"]["contexts"].HasMember("dm_session")) {
-            dm_session = 
+            dm_session =
                 request_bot_session_doc["dialog_state"]["contexts"]["dm_session"].GetString();
         }
     }
@@ -142,7 +164,6 @@ int DialogManager::run(brpc::Controller* cntl) {
     }
 
     // Handle satify/understood intents
-    std::string bot_id = unit_response_doc["result"]["bot_id"].GetString();
     QuResult* qu_result = QuResult::parse_from_dialog_state(
         bot_id, bot_session_doc["dialog_state"]);
     if (qu_result == nullptr) {
@@ -156,6 +177,7 @@ int DialogManager::run(brpc::Controller* cntl) {
     qu_map->insert(bot_id, qu_result);
     // Parsing request params from client_session, only string value is accepted
     std::unordered_map<std::string, std::string> request_params;
+    std::string product = "default";
     if (request_doc["request"].HasMember("client_session")) {
         std::string client_session = request_doc["request"]["client_session"].GetString();
         rapidjson::Document client_session_doc;
@@ -166,13 +188,16 @@ int DialogManager::run(brpc::Controller* cntl) {
                 }
                 std::string param_name = m_param.name.GetString();
                 std::string param_value = m_param.value.GetString();
+                if (param_name == "product") {
+                    product = param_value;
+                }
                 request_params[param_name] = param_value;
             }
         }
     }
     RequestContext context(this->_remote_service_manager, log_id, request_params);
     PolicyOutput* policy_output = this->_policy_manager->resolve(
-        "default", qu_map, session, context);
+        product, qu_map, session, context);
     for (auto iter = qu_map->begin(); iter != qu_map->end(); ++iter) {
         QuResult* qu_ptr = iter->second;
         if (qu_ptr != nullptr) {
@@ -191,7 +216,7 @@ int DialogManager::run(brpc::Controller* cntl) {
     return 0;
 }
 
-int DialogManager::call_unit_bot(const std::string& access_token, 
+int DialogManager::call_unit_bot(const std::string& access_token,
                                          const std::string& payload,
                                          std::string& result) {
     std::string url = "https://aip.baidubce.com/rpc/2.0/unit/bot/chat?access_token=";
@@ -235,7 +260,7 @@ int DialogManager::handle_unsatisfied_intent(brpc::Controller* cntl,
         this->send_json_response(cntl, utils::json_to_string(unit_response_doc));
         return 0;
     }
-    
+
     return -1;
 }
 

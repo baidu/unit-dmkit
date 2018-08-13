@@ -19,6 +19,7 @@
 #include <math.h>
 #include <sstream>
 #include <stdlib.h>
+#include <time.h>
 #include <unordered_map>
 #include "../app_log.h"
 #include "../rapidjson.h"
@@ -304,6 +305,28 @@ int service_http_post(const std::vector<std::string>& args,
 
     result = rsm_result.result;
     APP_LOG(TRACE) << "post data result:" << result;
+    return 0;
+}
+
+// Get strftime result for current time
+// args[0]: strftime used format string
+int now_strftime(const std::vector<std::string>& args,
+        const RequestContext& context, std::string& result) {
+    (void)context;
+    
+    if (args.size() < 1) {
+        return -1;
+    }
+    time_t t = time(0);
+    struct tm now;
+    localtime_r(&t, &now);
+    char buffer [80];
+    if (strftime(buffer, 80, args[0].c_str(), &now) == 0) {
+        APP_LOG(WARNING) << "strftime returns 0!";
+        return -1;
+    }
+
+    result = buffer;
     return 0;
 }
 

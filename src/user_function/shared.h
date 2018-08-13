@@ -59,6 +59,11 @@ int service_http_post(const std::vector<std::string>& args,
                       const RequestContext& context,
                       std::string& result);
 
+// Time Related
+int now_strftime(const std::vector<std::string>& args,
+                 const RequestContext& context,
+                 std::string& result);
+
 } // namespace user_function
 } // namespace dmkit
 
