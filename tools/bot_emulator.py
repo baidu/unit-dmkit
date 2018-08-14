@@ -38,7 +38,7 @@ def main(bot_id, token):
     
     json_header = {'Content-Type': 'application/json'}
     user_id = str(random.randint(1, 100000))
-    session = "{\"session_id\":\"1\"}"
+    session = ""
     while True:
         print "-----------------------------------------------------------------"
         user_input = raw_input("input:\n")
