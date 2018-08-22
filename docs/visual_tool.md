@@ -6,7 +6,7 @@
 
 这里的可视化编辑工具使用开源的[mxgraph](https://github.com/jgraph/mxgraph)可视化库，对话开发者可在可视化工具上进行图编辑，而该可视化库支持从图转化为xml文件，我们再利用转换框架实现对应的编译器将xml文件转化为对话基础配置加载执行。以demo场景【查询流量及续订】为例，步骤为：
 
-* 在[draw.io](https://www.draw.io/)中按照[编辑规则](###编辑规则)进行图编辑
+* 在[draw.io](https://www.draw.io/)中按照[编辑规则](#编辑规则)进行图编辑
 * 在编辑好的图导出为xml文件，放置于conf/app/demo目录下
 * 运行language_compiler/run.py程序，该程序调用对应的转换器将conf/app/demo目录下的xml文件转化为json文件
 * 将json文件注册于conf/app/products.json文件后，运行DMKit加载执行
