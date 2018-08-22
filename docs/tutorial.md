@@ -26,6 +26,16 @@ DM Kit关注其中的对话管理模块（Dialog Manager），解决对话系统
 
 在垂类基础配置之上，还衍生出了一系列扩展功能。例如我们对一些仅需要触发条件及输出的垂类，我们可以设计更精简的语法，使用更简洁的配置描述对话policy；对于多状态跳转的场景，我们引入了可视化的编辑工具，来描述对话跳转逻辑。精简语法表示及可视化编辑都可以自动转化为对话管理引擎可执行的配置，在系统中运行。
 
+## 使用DM Kit搭建BOT的一般步骤
+
+DM Kit依托UNIT提供的自然语言理解能力，在此基础上搭建对话BOT的一般步骤为：
+
+* 通过UNIT平台创建BOT，配置BOT对话流程所需的意图解析能力；
+
+* 编写BOT的policy配置，policy配置文件语法见[垂类配置](#垂类配置)。对于对话状态状态繁多，跳转复杂的BOT，可以借助[可视化配置工具](visual_tool.md)进行可视化编辑并导出垂类配置。
+
+* 将UNIT平台所创建BOT的id与其对应policy配置文件注册于DM Kit全局垂类注册文件，注册文件配置项见[垂类注册](#垂类注册)。完成之后编译运行DM Kit主程序，访问DM Kit[服务接口](#服务接口)即可测试对话效果。
+
 ## 详细配置说明
 
 本节详细介绍实现垂类功能的配置语法。所有垂类的配置均位于模块源码conf/app/目录下。
@@ -71,7 +81,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 |----------|--------------|
 | slot_val | 从qu结果中取对应的slot值，有归一化值优先取归一化值。当对应tag值存在多个slot时，value值支持tag后按分隔符","添加下标i取对应tag的第i个值（索引从0开始） |
 | request_param | 取请求参数对应的字段 |
-| session_obj | 上一轮对话session结果中objects结构体中对应的字段 |
+| session_context | 上一轮对话session结果中context结构体中对应的字段 |
 | func_val | 调用用户定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
 | qu_intent | NLU结果中的intent值 |
 | session_state | 当前对话session中的state值 |
