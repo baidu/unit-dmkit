@@ -167,6 +167,9 @@ Policy* Policy::parse_from_json_value(const rapidjson::Value& value) {
                         result.values.push_back(v_result_value.GetString());
                     }
                 }
+                if (v_result.HasMember("extra") && v_result["extra"].IsString()) {
+                    result.extra = v_result["extra"].GetString();
+                }
                 output.results.push_back(result);
             }
 
@@ -240,6 +243,35 @@ std::string PolicyOutput::to_json_str(const PolicyOutput& output) {
         writer.String(result.type.c_str(), result.type.length());
         writer.Key("value");
         writer.String(result.values[0].c_str(), result.values[0].length());
+        if (!result.extra.empty()) {
+            rapidjson::Document extra_doc;
+            if (!extra_doc.Parse(result.extra.c_str()).HasParseError() && extra_doc.IsObject()) {
+                for (auto& v_extra: extra_doc.GetObject()) {
+                    std::string extra_key = v_extra.name.GetString();
+                    if (extra_key == "type" || extra_key == "value") {
+                        LOG(WARNING) << "Unsupported extra key " << extra_key;
+                    }
+                    if (v_extra.value.IsString()) {
+                        std::string extra_value = v_extra.value.GetString();
+                        writer.Key(extra_key.c_str());
+                        writer.String(extra_value.c_str(), extra_value.length());
+                    } else if (v_extra.value.IsBool()) {
+                        writer.Key(extra_key.c_str());
+                        writer.Bool(v_extra.value.GetBool());
+                    } else if (v_extra.value.IsInt()) {
+                        writer.Key(extra_key.c_str());
+                        writer.Int(v_extra.value.GetInt());
+                    } else if (v_extra.value.IsDouble()) {
+                        writer.Key(extra_key.c_str());
+                        writer.Double(v_extra.value.GetDouble());
+                    } else {
+                        LOG(WARNING) << "Unknown extra value type " << v_extra.value.GetType();
+                    }
+                }
+            } else {
+                LOG(WARNING) << "Failed to parse result extra json: " <<  result.extra;
+            }
+        }
         writer.EndObject();
     }
     writer.EndArray();

@@ -31,19 +31,27 @@ public:
     DialogManager();
     virtual ~DialogManager();
     virtual int init();
-    virtual int run(brpc::Controller* cntl);
+    virtual int run(BRPC_NAMESPACE::Controller* cntl);
+
 private:
+    int process_request(const rapidjson::Document& request_doc,
+                        const std::string& dm_session,
+                        const std::string& access_token,
+                        std::string& json_response,
+                        bool& is_dmkit_response);
+
     int call_unit_bot(const std::string& access_token,
                       const std::string& payload,
                       std::string& result);
 
-    int handle_unsatisfied_intent(brpc::Controller* cntl,
-                                  rapidjson::Document& unit_response_doc,
+    int handle_unsatisfied_intent(rapidjson::Document& unit_response_doc,
                                   rapidjson::Document& bot_session_doc,
-                                  const std::string& dm_session);
+                                  const std::string& dm_session,
+                                  std::string& response);
 
-    void send_error_response(brpc::Controller* cntl, int error_code, const std::string& error_msg);
-    void send_json_response(brpc::Controller* cntl, const std::string& data);
+    std::string get_error_response(int error_code, const std::string& error_msg);
+
+    void send_json_response(BRPC_NAMESPACE::Controller* cntl, const std::string& data);
 
     void set_dm_response(rapidjson::Document& unit_response_doc,
                          rapidjson::Document& bot_session_doc,

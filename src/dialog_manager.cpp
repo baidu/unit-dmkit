@@ -15,9 +15,8 @@
 #include "dialog_manager.h"
 #include <memory>
 #include <string>
-#include <butil/containers/flat_map.h>
-#include <butil/iobuf.h>
 #include "app_log.h"
+#include "butil.h"
 #include "rapidjson.h"
 #include "request_context.h"
 #include "utils.h"
@@ -60,10 +59,10 @@ int DialogManager::init() {
     return 0;
 }
 
-int DialogManager::run(brpc::Controller* cntl) {
+int DialogManager::run(BRPC_NAMESPACE::Controller* cntl) {
     std::string request_json = cntl->request_attachment().to_string();
     APP_LOG(TRACE) << "received request: " << request_json;
-    //this->add_notice_log("req", request_json);
+    this->add_notice_log("req", request_json);
 
     rapidjson::Document request_doc;
     // In the case we cannot parse the request json, it is not a valid request.
@@ -76,7 +75,7 @@ int DialogManager::run(brpc::Controller* cntl) {
     // Need to set log_id as soon as we can get it to avoid missing log_id in logs.
     if (!request_doc.HasMember("log_id") || !request_doc["log_id"].IsString()) {
         APP_LOG(WARNING) << "Missing log_id";
-        this->send_error_response(cntl, -1, "Missing log_id");
+        this->send_json_response(cntl, this->get_error_response(-1, "Missing log_id"));
         return 0;
     }
     std::string log_id = request_doc["log_id"].GetString();
@@ -88,11 +87,45 @@ int DialogManager::run(brpc::Controller* cntl) {
     // Parsing bot_id from request json
     if (!request_doc.HasMember("bot_id") || !request_doc["bot_id"].IsString()) {
         APP_LOG(WARNING) << "Missing bot_id";
-        this->send_error_response(cntl, -1, "Missing bot_id");
+        this->send_json_response(cntl, this->get_error_response(-1, "Missing bot_id"));
         return 0;
     }
     std::string bot_id = request_doc["bot_id"].GetString();
-    
+
+    std::string query;
+    if (request_doc.HasMember("request") && request_doc["request"].HasMember("query") &&
+            request_doc["request"]["query"].IsString()) {
+        query = request_doc["request"]["query"].GetString();
+    }
+    std::string rewrite_query;
+    if (request_doc.HasMember("request") && request_doc["request"].HasMember("rewrite_query") &&
+            request_doc["request"]["rewrite_query"].IsString()) {
+        rewrite_query = request_doc["request"]["rewrite_query"].GetString();
+        request_doc["request"].RemoveMember("rewrite_query");
+    }
+
+    // Get dmkit session from request. We saved it in the bot session in latest response.
+    std::string dm_session;
+    if (request_doc.HasMember("bot_session")) {
+        std::string request_bot_session = request_doc["bot_session"].GetString();
+        rapidjson::Document request_bot_session_doc;
+        if (request_bot_session.empty()
+                || request_bot_session_doc.Parse(request_bot_session.c_str()).HasParseError()
+                || !request_bot_session_doc.IsObject()
+                || !request_bot_session_doc.HasMember("session_id")
+                || !request_bot_session_doc.HasMember("dialog_state")
+                || !request_bot_session_doc["dialog_state"].HasMember("contexts")
+                || !request_bot_session_doc["dialog_state"]["contexts"].HasMember("dm_session")) {
+            // Not a valid session from DM Kit
+            request_doc["bot_session"].SetString("", 0, request_doc.GetAllocator());
+        } else {
+            dm_session =
+                request_bot_session_doc["dialog_state"]["contexts"]["dm_session"].GetString();
+        }
+    }
+    APP_LOG(TRACE) << "dm session: " << dm_session;
+    PolicyOutputSession session = PolicyOutputSession::from_json_str(dm_session);
+
     // Get access_token from request uri.
     std::string access_token;
     const std::string* access_token_ptr = cntl->http_request().uri().GetQuery("access_token");
@@ -102,16 +135,45 @@ int DialogManager::run(brpc::Controller* cntl) {
     if (access_token.empty() && this->_token_manager->get_access_token(
                 bot_id, this->_remote_service_manager, access_token) != 0) {
         APP_LOG(ERROR) << "Failed to get access token";
-        this->send_error_response(cntl, -1, "Failed to get access token");
+        this->send_json_response(cntl, this->get_error_response(-1, "Failed to get access token"));
         return 0;
     }
 
-    request_json = utils::json_to_string(request_doc);
+    std::string query_response;
+    bool is_dmkit_response = false;
+    this->process_request(request_doc, dm_session, access_token, query_response, is_dmkit_response);
+    if (is_dmkit_response || rewrite_query.empty()) {
+        this->send_json_response(cntl, query_response);
+        return 0;
+    }
+    std::string rewrite_query_response;
+    request_doc["request"]["query"].SetString(rewrite_query.c_str(), 
+        rewrite_query.length(), request_doc.GetAllocator());
+    this->process_request(request_doc, dm_session, access_token, 
+        rewrite_query_response, is_dmkit_response);
+    if (is_dmkit_response) {
+        this->send_json_response(cntl, rewrite_query_response);
+        return 0;
+    }
+    this->send_json_response(cntl, query_response);
+    return 0;
+}
+
+int DialogManager::process_request(const rapidjson::Document& request_doc,
+                                   const std::string& dm_session,
+                                   const std::string& access_token,
+                                   std::string& json_response,
+                                   bool& is_dmkit_response) {
+    std::string bot_id = request_doc["bot_id"].GetString();
+    std::string log_id = request_doc["log_id"].GetString();
+    std::string query = request_doc["request"]["query"].GetString();
+    is_dmkit_response = false;
+    std::string request_json = utils::json_to_string(request_doc);
     // Call unit bot api with the request json as dmkit use the same data contract.
     std::string unit_bot_result;
     if (this->call_unit_bot(access_token, request_json, unit_bot_result) != 0) {
         APP_LOG(ERROR) << "Failed to call unit bot api";
-        this->send_error_response(cntl, -1, "Failed to call unit bot api");
+        json_response = get_error_response(-1, "Failed to get access token");
         return 0;
     }
     APP_LOG(TRACE) << "unit bot result: " << unit_bot_result;
@@ -122,32 +184,15 @@ int DialogManager::run(brpc::Controller* cntl) {
     if (unit_response_doc.Parse(unit_bot_result.c_str()).HasParseError()
             || !unit_response_doc.IsObject()) {
         APP_LOG(ERROR) << "Failed to parse unit bot result: " << unit_bot_result;
-        this->send_error_response(cntl, -1, "Failed to parse unit bot result");
-        return 0;
+        json_response = get_error_response(-1, "Failed to get access token");
+        return -1;
     }
     if (!unit_response_doc.HasMember("error_code")
             || !unit_response_doc["error_code"].IsInt()
             || unit_response_doc["error_code"].GetInt() != 0) {
-        this->send_json_response(cntl, unit_bot_result);
+        json_response = unit_bot_result;
         return 0;
     }
-
-    // Get dmkit session from request. We saved it in the bot session in latest response.
-    std::string dm_session;
-    if (request_doc.HasMember("bot_session")) {
-        std::string request_bot_session = request_doc["bot_session"].GetString();
-        rapidjson::Document request_bot_session_doc;
-        if (!request_bot_session_doc.Parse(request_bot_session.c_str()).HasParseError()
-                && request_bot_session_doc.IsObject()
-                && request_bot_session_doc.HasMember("dialog_state")
-                && request_bot_session_doc["dialog_state"].HasMember("contexts")
-                && request_bot_session_doc["dialog_state"]["contexts"].HasMember("dm_session")) {
-            dm_session =
-                request_bot_session_doc["dialog_state"]["contexts"]["dm_session"].GetString();
-        }
-    }
-    APP_LOG(TRACE) << "dm session: " << dm_session;
-    PolicyOutputSession session = PolicyOutputSession::from_json_str(dm_session);
 
     // The bot status is included in bot_session
     std::string bot_session = unit_response_doc["result"]["bot_session"].GetString();
@@ -155,11 +200,11 @@ int DialogManager::run(brpc::Controller* cntl) {
     if (bot_session_doc.Parse(bot_session.c_str()).HasParseError()
             || !bot_session_doc.IsObject()) {
         APP_LOG(ERROR) << "Failed to parse bot session: " << bot_session;
-        this->send_error_response(cntl, -1, "Failed to parse bot session");
+        json_response = get_error_response(-1, "Failed to parse bot session");
         return 0;
     }
-    if (this->handle_unsatisfied_intent(cntl, unit_response_doc,
-            bot_session_doc, dm_session) == 0) {
+    if (this->handle_unsatisfied_intent(unit_response_doc, 
+            bot_session_doc, dm_session, json_response) == 0) {
         return 0;
     }
 
@@ -167,10 +212,10 @@ int DialogManager::run(brpc::Controller* cntl) {
     QuResult* qu_result = QuResult::parse_from_dialog_state(
         bot_id, bot_session_doc["dialog_state"]);
     if (qu_result == nullptr) {
-        this->send_error_response(cntl, -1, "Failed to parse qu_result");
+        json_response = this->get_error_response(-1, "Failed to parse qu_result");
         return 0;
     }
-    auto qu_map = new butil::FlatMap<std::string, QuResult*>();
+    auto qu_map = new BUTIL_NAMESPACE::FlatMap<std::string, QuResult*>();
     // 2: bucket_count, initial count of buckets, big enough to avoid resize.
     // 50: load_factor, element_count * 100 / bucket_count.
     qu_map->init(2, 50);
@@ -195,6 +240,7 @@ int DialogManager::run(brpc::Controller* cntl) {
             }
         }
     }
+    PolicyOutputSession session = PolicyOutputSession::from_json_str(dm_session);
     RequestContext context(this->_remote_service_manager, log_id, request_params);
     PolicyOutput* policy_output = this->_policy_manager->resolve(
         product, qu_map, session, context);
@@ -207,12 +253,25 @@ int DialogManager::run(brpc::Controller* cntl) {
     delete qu_map;
 
     if (policy_output == nullptr) {
-        this->send_error_response(cntl, -1, "DM policy resolve failed");
+        json_response = this->get_error_response(-1, "DM policy resolve failed");
         return 0;
+    }
+    bool has_query = false;
+    for (auto const& meta: policy_output->meta) {
+        if (meta.key == "query") {
+            has_query = true;
+        }
+    }
+    if (!has_query) {
+        KVPair meta_query;
+        meta_query.key = "query";
+        meta_query.value = query;
+        policy_output->meta.push_back(meta_query);
     }
     this->set_dm_response(unit_response_doc, bot_session_doc, policy_output);
     delete policy_output;
-    this->send_json_response(cntl, utils::json_to_string(unit_response_doc));
+    is_dmkit_response = true;
+    json_response = utils::json_to_string(unit_response_doc);
     return 0;
 }
 
@@ -239,10 +298,10 @@ int DialogManager::call_unit_bot(const std::string& access_token,
     return 0;
 }
 
-int DialogManager::handle_unsatisfied_intent(brpc::Controller* cntl,
-                                             rapidjson::Document& unit_response_doc,
+int DialogManager::handle_unsatisfied_intent(rapidjson::Document& unit_response_doc,
                                              rapidjson::Document& bot_session_doc,
-                                             const std::string& dm_session) {
+                                             const std::string& dm_session,
+                                             std::string& response) {
     std::string action_type = unit_response_doc["result"]["response"]["action_list"][0]["type"].GetString();
     if (action_type != "satisfy" && action_type != "understood") {
         // DM session should be saved
@@ -256,8 +315,7 @@ int DialogManager::handle_unsatisfied_intent(brpc::Controller* cntl,
         unit_response_doc.AddMember("debug", bot_session_doc, unit_response_doc.GetAllocator());
         unit_response_doc["result"]["bot_session"].SetString(
             bot_session.c_str(), bot_session.length(), unit_response_doc.GetAllocator());
-
-        this->send_json_response(cntl, utils::json_to_string(unit_response_doc));
+        response = utils::json_to_string(unit_response_doc);
         return 0;
     }
 
@@ -301,9 +359,7 @@ void DialogManager::set_dm_response(rapidjson::Document& unit_response_doc,
         bot_session.c_str(), bot_session.length(), unit_response_doc.GetAllocator());
 }
 
-void DialogManager::send_error_response(brpc::Controller* cntl,
-                                                int error_code,
-                                                const std::string& error_msg) {
+std::string DialogManager::get_error_response(int error_code, const std::string& error_msg) {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     writer.StartObject();
@@ -313,13 +369,13 @@ void DialogManager::send_error_response(brpc::Controller* cntl,
     writer.String(error_msg.c_str(), error_msg.length());
     writer.EndObject();
 
-    this->send_json_response(cntl, buffer.GetString());
+    return buffer.GetString();
 }
 
-void DialogManager::send_json_response(brpc::Controller* cntl,
+void DialogManager::send_json_response(BRPC_NAMESPACE::Controller* cntl,
                                        const std::string& data) {
     cntl->http_response().set_content_type("application/json;charset=UTF-8");
-    //this->add_notice_log("ret", data);
+    this->add_notice_log("ret", data);
     cntl->response_attachment().append(data);
 }
 

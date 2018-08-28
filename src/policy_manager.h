@@ -15,9 +15,12 @@
 #ifndef DMKIT_POLICY_MANAGER_H
 #define DMKIT_POLICY_MANAGER_H
 
+#include <atomic>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
-#include <butil/containers/flat_map.h>
+#include "butil.h"
 #include "policy.h"
 #include "qu_result.h"
 #include "request_context.h"
@@ -26,7 +29,7 @@
 namespace dmkit {
 
 typedef std::vector<Policy*> PolicyVector;
-typedef butil::FlatMap<std::string, PolicyVector*> IntentPolicyMap;
+typedef BUTIL_NAMESPACE::FlatMap<std::string, PolicyVector*> IntentPolicyMap;
 
 // Holds all policies given a domain.
 class DomainPolicy {
@@ -44,8 +47,8 @@ private:
     IntentPolicyMap* _intent_policy_map;
 };
 
-typedef butil::FlatMap<std::string, DomainPolicy*> DomainPolicyMap;
-typedef butil::FlatMap<std::string, DomainPolicyMap*> ProductPolicyMap;
+typedef BUTIL_NAMESPACE::FlatMap<std::string, DomainPolicy*> DomainPolicyMap;
+typedef BUTIL_NAMESPACE::FlatMap<std::string, DomainPolicyMap*> ProductPolicyMap;
 
 class PolicyManager {
 public:
@@ -55,12 +58,12 @@ public:
     int reload();
     // Resolve a policy output given a qu result and current dm session
     PolicyOutput* resolve(const std::string& product,
-                          butil::FlatMap<std::string, QuResult*>* qu_result,
+                          BUTIL_NAMESPACE::FlatMap<std::string, QuResult*>* qu_result,
                           const PolicyOutputSession& session,
                           const RequestContext& context);
 
 private:
-    DomainPolicyMap* load_product_policy_map(const std::string& product_name,
+    DomainPolicyMap* load_domain_policy_map(const std::string& product_name,
                                              const rapidjson::Value& product_json);
 
     DomainPolicy* load_domain_policy(const std::string& domain_name,
@@ -77,10 +80,26 @@ private:
                                         QuResult* qu_result,
                                         const PolicyOutputSession& session,
                                         const RequestContext& context);
-    
-    std::string _dir_path;
-    std::string _conf_file;
-    ProductPolicyMap* _product_policy_map;
+
+    ProductPolicyMap* load_policy_dict();
+
+    void reload_thread_func();
+
+    void destroy_policy_dict(ProductPolicyMap* policy_dict);
+
+    ProductPolicyMap* acquire_policy_dict();
+
+    void release_policy_dict(ProductPolicyMap* policy_dict);
+
+    std::string _conf_file_path;
+    ProductPolicyMap* _dual_policy_dict[2];
+    int _policy_dict_ref_count[2];
+    int _current_policy_dict;
+    std::mutex _policy_dict_mutex;
+    std::atomic<bool> _destroyed;
+    std::thread _reload_thread;
+    std::string _conf_file_last_modified_time;
+
     UserFunctionManager* _user_function_manager;
 };
 

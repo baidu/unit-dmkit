@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,8 +14,8 @@
 
 #include "app_container.h"
 #include <chrono>
-#include <brpc/server.h>
 #include "app_log.h"
+#include "brpc.h"
 #include "dialog_manager.h"
 
 namespace dmkit {
@@ -77,20 +77,20 @@ ThreadLocalDataFactory* AppContainer::get_thread_local_data_factory() {
     return this->_data_factory;
 }
 
-int AppContainer::run(brpc::Controller* cntl) {
+int AppContainer::run(BRPC_NAMESPACE::Controller* cntl) {
     if (nullptr == this->_application) {
         APP_LOG(ERROR) << "No application is not loaded for processing!!!";
         return -1;
     }
-    
+
     auto time_start = std::chrono::steady_clock::now();
 
     // Need to reset thread data status before running the application
-    ThreadDataBase* tls = static_cast<ThreadDataBase*>(brpc::thread_local_data());
+    ThreadDataBase* tls = static_cast<ThreadDataBase*>(BRPC_NAMESPACE::thread_local_data());
     tls->reset();
     APP_LOG(TRACE) << "Running application";
     int result = this->_application->run(cntl);
-    
+
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> diff = std::chrono::duration_cast<std::chrono::duration<double>>(time_end - time_start);
     double total_cost = diff.count() * 1000;

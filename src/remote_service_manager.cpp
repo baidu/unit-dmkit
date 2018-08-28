@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ RemoteServiceManager::RemoteServiceManager() {
 }
 
 RemoteServiceManager::~RemoteServiceManager() {
-    for (butil::FlatMap<std::string, RemoteServiceChannel>::iterator 
+    for (BUTIL_NAMESPACE::FlatMap<std::string, RemoteServiceChannel>::iterator
             iter = this->_channel_map.begin(); iter != this->_channel_map.end(); ++iter) {
         if (nullptr != iter->second.channel) {
             delete iter->second.channel;
@@ -87,14 +87,14 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
         }
         std::string naming_service_url = setting_iter->value.GetString();
         // Load balancer name such as random, rr.
-        // All supported balancer can be found in BRPC docs. 
+        // All supported balancer can be found in BRPC docs.
         setting_iter = settings.FindMember("load_balancer_name");
         if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
             APP_LOG(ERROR) << "Invalid service settings for " << service_name
                 << ", expecting type String for property load_balancer_name. Skipped...";
             continue;
         }
-        std::string load_balancer_name = setting_iter->value.GetString();        
+        std::string load_balancer_name = setting_iter->value.GetString();
         // Protocol for the channel.
         // Currently we support http.
         setting_iter = settings.FindMember("protocol");
@@ -108,7 +108,7 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
         setting_iter = settings.FindMember("client");
         std::string client;
         if (setting_iter != settings.MemberEnd() && setting_iter->value.IsString()) {
-            client = setting_iter->value.GetString();    
+            client = setting_iter->value.GetString();
         }
         // Timeout value in millisecond.
         setting_iter = settings.FindMember("timeout_ms");
@@ -132,11 +132,11 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
         if (setting_iter != settings.MemberEnd() && setting_iter->value.IsObject()) {
             const rapidjson::Value& obj_headers = setting_iter->value;
             rapidjson::Value::ConstMemberIterator header_iter;
-            for (header_iter = obj_headers.MemberBegin(); 
+            for (header_iter = obj_headers.MemberBegin();
                     header_iter != obj_headers.MemberEnd(); ++header_iter) {
                 std::string header_key = header_iter->name.GetString();
                 if (!header_iter->value.IsString()) {
-                    APP_LOG(ERROR) << "Invalid header value for " << header_key 
+                    APP_LOG(ERROR) << "Invalid header value for " << header_key
                         << ", expecting type String for header value. Skipped...";
                         continue;
                 }
@@ -145,12 +145,12 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
             }
         }
 
-        brpc::Channel* rpc_channel = nullptr;
+        BRPC_NAMESPACE::Channel* rpc_channel = nullptr;
         if (protocol == "http") {
             if (client.empty() || client == "brpc") {
-                rpc_channel = new brpc::Channel();
-                brpc::ChannelOptions options;
-                options.protocol = brpc::PROTOCOL_HTTP;
+                rpc_channel = new BRPC_NAMESPACE::Channel();
+                BRPC_NAMESPACE::ChannelOptions options;
+                options.protocol = BRPC_NAMESPACE::PROTOCOL_HTTP;
                 options.timeout_ms = timeout_ms;
                 options.max_retry = retry;
                 rpc_channel->Init(naming_service_url.c_str(), load_balancer_name.c_str(), &options);
@@ -190,13 +190,13 @@ int RemoteServiceManager::call(const std::string& service_name,
     }
 
     APP_LOG(TRACE) << "Calling service " << service_name;
-    
+
     int ret = 0;
     std::string remote_side;
     int latency = 0;
     if (service_channel->protocol == "http") {
         if (service_channel->channel != nullptr) {
-            ret = this->call_http_by_brpc(service_channel->channel,
+            ret = this->call_http_by_BRPC_NAMESPACE(service_channel->channel,
                                           params.url,
                                           params.http_method,
                                           service_channel->headers,
@@ -228,16 +228,16 @@ int RemoteServiceManager::call(const std::string& service_name,
     log_str += std::to_string(ret);
     std::string log_key = "service_";
     log_key += service_name;
-    
+
     APP_LOG(TRACE) << "remote_side=" << remote_side << ", cost=" << latency;
-    ThreadDataBase* tls = static_cast<ThreadDataBase*>(brpc::thread_local_data());
+    ThreadDataBase* tls = static_cast<ThreadDataBase*>(BRPC_NAMESPACE::thread_local_data());
     // All backend requests are logged.
     tls->add_notice_log(log_key, log_str);
 
     return ret;
 }
 
-int RemoteServiceManager::call_http_by_brpc(brpc::Channel* channel,
+int RemoteServiceManager::call_http_by_BRPC_NAMESPACE(BRPC_NAMESPACE::Channel* channel,
                                             const std::string& url,
                                             const HttpMethod method,
                                             const std::vector<std::pair<std::string, std::string>>& headers,
@@ -245,11 +245,11 @@ int RemoteServiceManager::call_http_by_brpc(brpc::Channel* channel,
                                             std::string& result,
                                             std::string& remote_side,
                                             int& latency) const {
-    brpc::Controller cntl;
+    BRPC_NAMESPACE::Controller cntl;
     cntl.http_request().uri() = url.c_str();
     if (method == HTTP_METHOD_POST) {
-        cntl.http_request().set_method(brpc::HTTP_METHOD_POST);
-        cntl.request_attachment().append(payload);    
+        cntl.http_request().set_method(BRPC_NAMESPACE::HTTP_METHOD_POST);
+        cntl.request_attachment().append(payload);
     }
     for (auto const& header: headers) {
         if (header.first == "Content-Type" || header.first == "content-type") {
@@ -258,24 +258,24 @@ int RemoteServiceManager::call_http_by_brpc(brpc::Channel* channel,
         }
         cntl.http_request().SetHeader(header.first, header.second);
     }
-    
+
     channel->CallMethod(NULL, &cntl, NULL, NULL, NULL);
     if (cntl.Failed()) {
         APP_LOG(WARNING) << "Call failed, error: " << cntl.ErrorText();
-        remote_side = butil::endpoint2str(cntl.remote_side()).c_str();
+        remote_side = BUTIL_NAMESPACE::endpoint2str(cntl.remote_side()).c_str();
         latency = cntl.latency_us() / 1000;
         return -1;
     }
     result = cntl.response_attachment().to_string();
-    
-    remote_side = butil::endpoint2str(cntl.remote_side()).c_str();
+
+    remote_side = BUTIL_NAMESPACE::endpoint2str(cntl.remote_side()).c_str();
     latency = cntl.latency_us() / 1000;
-    
+
     return 0;
 }
 
 static size_t curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
-    butil::IOBuf* buffer = static_cast<butil::IOBuf*>(userp);
+    BUTIL_NAMESPACE::IOBuf* buffer = static_cast<BUTIL_NAMESPACE::IOBuf*>(userp);
     size_t realsize = size * nmemb;
     buffer->append(contents, realsize);
     return realsize;
@@ -290,6 +290,8 @@ int RemoteServiceManager::call_http_by_curl(const std::string& url,
                                             std::string& result,
                                             std::string& remote_side,
                                             int& latency) const {
+    // curl does not support retry now
+    (void)max_retry;
     CURL *curl;
     CURLcode res;
     struct curl_slist *curl_headers = nullptr;
@@ -299,7 +301,7 @@ int RemoteServiceManager::call_http_by_curl(const std::string& url,
         return -1;
     }
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    butil::IOBuf response_buffer; 
+    BUTIL_NAMESPACE::IOBuf response_buffer;
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, static_cast<void*>(&response_buffer));
 
@@ -316,6 +318,8 @@ int RemoteServiceManager::call_http_by_curl(const std::string& url,
         curl_headers = curl_slist_append(curl_headers, header_value.c_str());
     }
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout_ms);
+
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     res = curl_easy_perform(curl);
     curl_slist_free_all(curl_headers);

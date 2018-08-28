@@ -1,11 +1,11 @@
 // Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,8 +18,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <brpc/channel.h>
-#include <butil/containers/flat_map.h>
+#include "brpc.h"
+#include "butil.h"
 
 namespace dmkit {
 
@@ -49,7 +49,7 @@ struct RemoteServiceChannel {
     // Protocol such as http
     std::string protocol;
     // Rpc channel instance
-    brpc::Channel *channel;
+    BRPC_NAMESPACE::Channel *channel;
     // timeout in milliseconds
     int timeout_ms;
     // retry count
@@ -60,17 +60,17 @@ struct RemoteServiceChannel {
 
 // A configurable remote service manager class.
 // All remote service channels are created with configuration file
-// when initialization. Caller calls a remote service by supplying 
+// when initialization. Caller calls a remote service by supplying
 // the service name and other parameters.
 class RemoteServiceManager {
 public:
     RemoteServiceManager();
-    
+
     ~RemoteServiceManager();
-    
+
     // Initalization with a json configuration file.
     int init(const char *path, const char *conf);
-    
+
     // Call a remote service with specifid service name.
     int call(const std::string& servie_name,
              const RemoteServiceParam& params,
@@ -78,7 +78,7 @@ public:
 
 private:
     // Http is the most common protocol.
-   int call_http_by_brpc(brpc::Channel* channel,
+   int call_http_by_BRPC_NAMESPACE(BRPC_NAMESPACE::Channel* channel,
                          const std::string& url,
                          const HttpMethod method,
                          const std::vector<std::pair<std::string, std::string>>& headers,
@@ -97,7 +97,7 @@ private:
                           std::string& remote_side,
                           int& latency) const;
 
-    butil::FlatMap<std::string, RemoteServiceChannel> _channel_map;
+    BUTIL_NAMESPACE::FlatMap<std::string, RemoteServiceChannel> _channel_map;
 };
 
 } // namespace dmkit

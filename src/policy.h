@@ -59,6 +59,7 @@ struct PolicyOutputSession {
 struct PolicyOutputResult {
     std::string type;
     std::vector<std::string> values;
+    std::string extra;
 };
 
 struct PolicyOutputQuSlot {

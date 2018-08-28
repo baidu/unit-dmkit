@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DMKIT_APP_LOG_H
-#define DMKIT_APP_LOG_H
+#ifndef DMKIT_BUTIL_H
+#define DMKIT_BUTIL_H
 
-#include "brpc.h"
-#include "butil.h"
-#include "thread_data_base.h"
+#ifndef BUTIL_INCLUDE_PREFIX
+#define BUTIL_INCLUDE_PREFIX <butil
+#endif
 
-namespace dmkit {
+#ifndef BUTIL_NAMESPACE
+#define BUTIL_NAMESPACE butil
+#endif
 
-// Wrapper for application logging to include trace id for each log during a request.
-#define APP_LOG(severity)  \
-    LOG(severity) << "logid=" << (BRPC_NAMESPACE::thread_local_data() == nullptr ? "" : \
-      (static_cast<dmkit::ThreadDataBase*>(BRPC_NAMESPACE::thread_local_data()))->get_log_id()) \
-      << " "
+#include BUTIL_INCLUDE_PREFIX/iobuf.h>
+#ifdef BUTIL_ENABLE_COMLOG_SINK
+#include BUTIL_INCLUDE_PREFIX/comlog_sink.h>
+#endif
+#include BUTIL_INCLUDE_PREFIX/containers/flat_map.h>
+#include BUTIL_INCLUDE_PREFIX/logging.h>
 
-} // namespace dmkit
-
-#endif  //DMKIT_APP_LOG_H
+#endif  //DMKIT_BUTIL_H
