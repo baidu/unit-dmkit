@@ -82,9 +82,17 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 | slot_val | 从qu结果中取对应的slot值，有归一化值优先取归一化值。当对应tag值存在多个slot时，value值支持tag后按分隔符","添加下标i取对应tag的第i个值（索引从0开始） |
 | request_param | 取请求参数对应的字段 |
 | session_context | 上一轮对话session结果中context结构体中对应的字段 |
-| func_val | 调用用户定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
+| func_val | 调用开发者定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
 | qu_intent | NLU结果中的intent值 |
 | session_state | 当前对话session中的state值 |
+
+特别的，开发者可以添加注册自定义函数，定义func_val类型的变量调用自定义函数实现功能扩展、定制化对话逻辑。DM Kit默认内置提供了包括以下函数：
+
+| 函数名                              |函数说明                                        | 参数                                      |
+|------------------------------------|------------------------------------ -----------|-------------------------------------------|
+| service_http_get                   | 通过HTTP GET的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名<br>参数2：服务请求的路径，例如"/baidu/unit-dmkit"    |
+| service_http_post                  | 通过HTTP POST的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名<br>参数2：服务请求的路径，例如"/baidu/unit-dmkit" <br>参数3：POST数据内容   |
+| json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串<br>参数2：所需获取的字段在json字符串中的路径|
 
 #### result中assertion类型说明：
 
@@ -103,7 +111,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 * 在默认基础配置之上，有能力的开发者可以自行设计使用更简洁的配置描述对话policy并转化为基础配置进行加载。
 * 对于多状态跳转的场景，可以引入了可视化的编辑工具，来描述对话跳转逻辑。这里我们提供了一个使用[mxgraph](https://github.com/jgraph/mxgraph)进行可视化配置的样例，文档参考：[可视化配置工具](visual_tool.md)
 
-## 服务接口
+## DM Kit服务接口
 
-* DM Kit服务监听端口及访问路径等参数可通过conf/gflags.conf文件进行配置
-* 服务接收Post数据协议与[UNIT2.0接口协议](http://ai.baidu.com/docs#/UNIT-v2-API/top)兼容。DM Kit定义custom_reply类型为DM_RESULT时，返回内容为DM Kit返回output结果。
+* DM Kit服务监听端口及访问路径等参数可通过conf/gflags.conf文件进行配置，默认请求链接为http://<HOST>:8010/search, 其中<HOST>为DM Kit服务所在机器IP，请求方式为POST
+* 服务接收POST数据协议与[UNIT2.0接口协议](http://ai.baidu.com/docs#/UNIT-v2-API/top)兼容。开发者按照协议组装JSON数据请求DM Kit，DM Kit按照该协议返回JSON数据，同时DM Kit定义返回结果action_list中custom_reply类型为DM_RESULT时，返回内容为DM Kit输出的output结果。
