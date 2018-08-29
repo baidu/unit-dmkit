@@ -88,11 +88,11 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 
 特别的，开发者可以添加注册自定义函数，定义func_val类型的变量调用自定义函数实现功能扩展、定制化对话逻辑。DM Kit默认内置提供了包括以下函数：
 
-| 函数名                              |函数说明                                        | 参数                                      |
-|------------------------------------|------------------------------------ -----------|-------------------------------------------|
-| service_http_get                   | 通过HTTP GET的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名<br>参数2：服务请求的路径，例如"/baidu/unit-dmkit"    |
-| service_http_post                  | 通过HTTP POST的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名<br>参数2：服务请求的路径，例如"/baidu/unit-dmkit" <br>参数3：POST数据内容   |
-| json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串<br>参数2：所需获取的字段在json字符串中的路径|
+| 函数名          |函数说明              | 参数  |
+|----------------|--------------|----------------------|
+| service_http_get                   | 通过HTTP GET的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit"    |
+| service_http_post                  | 通过HTTP POST的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit" <br>参数3：POST数据内容   |
+| json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串 <br>参数2：所需获取的字段在json字符串中的路径|
 
 #### result中assertion类型说明：
 
