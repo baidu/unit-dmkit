@@ -92,14 +92,16 @@ int DialogManager::run(BRPC_NAMESPACE::Controller* cntl) {
     }
     std::string bot_id = request_doc["bot_id"].GetString();
 
-    std::string query;
-    if (request_doc.HasMember("request") && request_doc["request"].HasMember("query") &&
-            request_doc["request"]["query"].IsString()) {
-        query = request_doc["request"]["query"].GetString();
+    if (!request_doc.HasMember("request") || !request_doc["request"].HasMember("query")
+            || !request_doc["request"]["query"].IsString()) {
+        APP_LOG(WARNING) << "Missing query";
+        this->send_json_response(cntl, this->get_error_response(-1, "Missing query"));
+        return 0;
     }
+    std::string query = request_doc["request"]["query"].GetString();
     std::string rewrite_query;
-    if (request_doc.HasMember("request") && request_doc["request"].HasMember("rewrite_query") &&
-            request_doc["request"]["rewrite_query"].IsString()) {
+    if (request_doc["request"].HasMember("rewrite_query") 
+            && request_doc["request"]["rewrite_query"].IsString()) {
         rewrite_query = request_doc["request"]["rewrite_query"].GetString();
         request_doc["request"].RemoveMember("rewrite_query");
     }
