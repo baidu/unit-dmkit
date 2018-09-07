@@ -61,5 +61,5 @@ python bot_emulator.py [bot id] [access token]
 
 ## 讨论
 
-* 提issue发出问题讨论，如果是问题选择类型为问题即可。
-* 加入UNIT开发者讨论群。
+* 提issue发起问题讨论，如果是问题选择类型为问题即可。
+* 欢迎加入UNIT QQ群（584835350）交流讨论。
