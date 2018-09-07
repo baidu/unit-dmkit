@@ -86,7 +86,9 @@ PolicyManager::~PolicyManager() {
     }
 
     this->_destroyed = true;
-    this->_reload_thread.join();
+    if (this->_reload_thread.joinable()) {
+        this->_reload_thread.join();
+    }
     this->destroy_policy_dict(this->_dual_policy_dict[0]);
     this->destroy_policy_dict(this->_dual_policy_dict[1]);
     this->_dual_policy_dict[0] = nullptr;
@@ -255,7 +257,7 @@ ProductPolicyMap* PolicyManager::load_policy_dict() {
     fclose(fp);
 
     if (doc.HasParseError() || !doc.IsObject()) {
-        APP_LOG(ERROR) << "Failed to parse RemoteServiceManager settings";
+        APP_LOG(ERROR) << "Failed to parse products.json file";
         this->destroy_policy_dict(product_policy_map);
         return nullptr;
     }
