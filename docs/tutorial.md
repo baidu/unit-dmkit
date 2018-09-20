@@ -93,6 +93,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 | service_http_get                   | 通过HTTP GET的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit"    |
 | service_http_post                  | 通过HTTP POST的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit" <br>参数3：POST数据内容   |
 | json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串 <br>参数2：所需获取的字段在json字符串中的路径|
+| url_encode                         | 对输入字符串进行url编码操作       |参数1：进行编码的字符串|
 
 #### result中assertion类型说明：
 
