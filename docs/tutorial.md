@@ -61,12 +61,12 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 |+state                           |string        | 触发所需状态值，即上一轮对话session中保存的state字段值 |
 |params                           |list          | 变量列表 |
 |+params[].name                   |string        | 变量名，后定义的变量可以使用已定义的变量进行模板填充，result节点中的值也可以使用变量进行模板填充。变量的使用格式为{%name%} |
-|+params[].type                   |string        | 变量类型，可能的类型为slot_val,request_param,session_obj,func_val |
+|+params[].type                   |string        | 变量类型，可能的类型为slot_val,request_param,session_context,func_val等，详细类型列表及说明可参照[params类型及说明](#params中变量类型列表及其说明) |
 |+params[].value                  |string        | 变量定义值 |
 |+params[].required               |bool          | 是否必须，如果必须的变量为空值时，该policy将不会返回结果 |
 |output                           |list          | 返回结果节点，可定义多个output，最终输出会按顺序选择第一个满足assertion条件的output |
 |+output[].assertion              |list          | 使用该output的前提条件列表 |
-|+output[].assertion[].type       |string        | 条件类型 |
+|+output[].assertion[].type       |string        | 条件类型，详细列表及说明可参照[assertion类型及说明](#result中assertion类型说明) |
 |+output[].assertion[].value      |string        | 条件值 |
 |+output[].session                |object        | 需要保存的session数据，用于更新对话状态及记录上下文 |
 |+output[].session.state          |string        | 更新的对话状态值 |
@@ -81,7 +81,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 |----------|--------------|
 | slot_val | 从qu结果中取对应的slot值，有归一化值优先取归一化值。当对应tag值存在多个slot时，value值支持tag后按分隔符","添加下标i取对应tag的第i个值（索引从0开始） |
 | request_param | 取请求参数对应的字段 |
-| session_context | 上一轮对话session结果中context结构体中对应的字段 |
+| session_context | 上一轮对话session结果中context结构体中对应的字段，例如上一轮output中context结构体保存了变量： "context": {"param_name": "{%param_name%}"}， 本轮可定义变量{"name": "param_name", "type": "session_context", "value": "param_name"} |
 | func_val | 调用开发者定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
 | qu_intent | NLU结果中的intent值 |
 | session_state | 当前对话session中的state值 |
