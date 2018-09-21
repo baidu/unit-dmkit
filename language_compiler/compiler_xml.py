@@ -142,6 +142,8 @@ class XmlParser(object):
                     raise Exception('some arrow is not pointing to anything')  
                 else:
                     arrow = Arrow(source, target)
+                    if text:
+                        arrow.arrow_text = self.__clean_noise(text)
                     self.__arrows[cell_id] = arrow
                 continue
             # judge node
