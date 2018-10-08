@@ -22,7 +22,7 @@ if [ $OS = mac ]; then
     brew install openssl git gnu-getopt gflags protobuf leveldb cmake openssl
 elif [ $OS = ubuntu ]; then
     echo "Installing dependencies for Ubuntu..."
-    sudo apt-get install git \
+    apt-get install -y git \
         g++ \
         make \
         libssl-dev \
@@ -37,9 +37,9 @@ elif [ $OS = ubuntu ]; then
         libgoogle-perftools-dev
 elif [ $OS = centos ]; then
     echo "Installing dependencies for CentOS..."
-    sudo yum install epel-release
-    sudo yum install git gcc-c++ make openssl-devel
-    sudo yum install gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
+    yum install -y epel-release
+    yum install -y git gcc-c++ make openssl-devel
+    yum install -y gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
 else
     echo "Skipping dependencies installation..."
 fi
