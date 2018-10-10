@@ -74,7 +74,7 @@ class XmlParser(object):
 
     def __clean_noise(self, value, stri='', noise=None):
         if not noise:
-            noise = ['&nbsp;', '&nbsp', 'nbsp', '<br>', '<div>', '</div>', '<span>', '</span>']
+            noise = ['&nbsp;', '&nbsp', 'nbsp', '<br>', '<div>', '</div>', '<span>', '</span>', '<span lang="ZH-CN">']
         for n in noise:
             value = value.replace(n, stri)
         if not stri:
@@ -82,11 +82,11 @@ class XmlParser(object):
         return value.strip()
 
     def __clean_span(self, value, stri=''):
-        return self.__clean_noise(value, '', ['<span>', '</span>'])
+        return self.__clean_noise(value, '', ['<span>', '</span>', '<span lang="ZH-CN">'])
 
     def __parse_cells(self):
         todo_cells = []
-        state = 1
+        state = 0
         for cell in self.root[0]:
             style = cell.get('style')
             cell_id = cell.get('id')
@@ -96,6 +96,7 @@ class XmlParser(object):
                 value = self.__clean_span(value)
                 re_nlg = re.compile(r'BOT.*?<')
                 re_params = re.compile(r'PARAM.*?<')
+                re_state = re.compile(r'STATE.*?<')
                 nlgs = []
                 if re_nlg.findall(value): 
                     for n in re_nlg.findall(value):
@@ -105,14 +106,20 @@ class XmlParser(object):
                 if re_params.findall(value):
                     for p in re_params.findall(value):
                         p = self.__clean_noise(p[6:-1])
-                        params.append(p)    
+                        params.append(p)
+                node_state = None
+                if re_state.findall(value):
+                    for s in re_state.findall(value):
+                        node_state = self.__clean_noise(s[6:-1])
+                        break
                 if 'BOT' not in value:
                     raise Exception('wrong shape is used in cell with text: ', nlg)                    
                 if value:
-                    node = Node(cell_id, 'server', '', nlgs, (3 - len(str(state))) * '0'\
-                            + str(state), params)
-                    self.__nodes[cell_id] = node 
-                    state += 1
+                    if not node_state:
+                        state += 1
+                        node_state = (3 - len(str(state))) * '0' + str(state)
+                    node = Node(cell_id, 'server', '', nlgs, node_state, params)
+                    self.__nodes[cell_id] = node
                 continue
             # customer node
             if style and style.startswith('ellipse'):

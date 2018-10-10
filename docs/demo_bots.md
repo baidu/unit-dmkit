@@ -38,6 +38,9 @@
 * INTENT_BOOK_DATA_PACKAGE，所需词槽为 user_package_type，user_package_name
 * INTENT_YES
 * INTENT_NO
+* INTENT_REPEAT
+* INTENT_WAIT
+* INTENT_CONTINUE
 
 词槽列表：
 
@@ -127,6 +130,25 @@
     不用
     不需要
     没有了
+    ```
+* kw_repeat
+    ```text
+    没听清楚
+    再说一次
+    ```
+* kw_wait
+    ```text
+    稍等
+    等等
+    稍等一下
+    等一下
+    等一等
+    ```
+* kw_continue
+    ```text
+    你继续
+    您继续
+    继续
     ```
 
 #### 导入对话模板

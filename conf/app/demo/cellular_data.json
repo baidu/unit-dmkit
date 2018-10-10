@@ -52,11 +52,7 @@
         "result": [
           {
             "type": "tts", 
-            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB"
-          }, 
-          {
-            "type": "tts", 
-            "value": "发现您的流量余额已经不足了，您是否需要续订流量包呢？"
+            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB。发现您的流量余额已经不足了，您是否需要续订流量包呢？"
           }
         ], 
         "session": {
@@ -120,11 +116,7 @@
         "result": [
           {
             "type": "tts", 
-            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB"
-          }, 
-          {
-            "type": "tts", 
-            "value": "发现您的流量余额已经不足了，您是否需要续订流量包呢？"
+            "value": "您的省内流量2GB，已用流量为{%usage%}GB，剩余流量为{%left%}G；全国流量包1GB，已用流量为1GB，剩余流量为0GB。发现您的流量余额已经不足了，您是否需要续订流量包呢？"
           }
         ], 
         "session": {
@@ -367,6 +359,92 @@
       "intent": "INTENT_NO", 
       "slots": [], 
       "state": "007"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "{%dmkit_param_last_tts%}"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "{%state%}"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "state", 
+        "type": "session_state", 
+        "value": ""
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_REPEAT", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "嗯，您说？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "009"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "dmkit_param_context_state", 
+        "type": "session_state", 
+        "value": ""
+      }, 
+      {
+        "name": "dmkit_param_context_tts", 
+        "type": "string", 
+        "value": "{%dmkit_param_last_tts%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_WAIT", 
+      "slots": [], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "{%dmkit_param_context_tts%}"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "{%dmkit_param_context_state%}"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_CONTINUE", 
+      "slots": [], 
+      "state": "009"
     }
   }
 ]

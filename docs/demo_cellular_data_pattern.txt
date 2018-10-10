@@ -1,3 +1,7 @@
+INTENT_CONTINUE	0.8	[D:kw_continue]#@##0#@##1	1
+INTENT_WAIT	0.8	[D:kw_wait]#@##0#@##1	1
+INTENT_CHECK_DATA_USAGE	0.8	[D:user_time]#@##0#@##1	1
+INTENT_REPEAT	0.7	[D:kw_repeat]#@##0#@##1	1
 INTENT_BOOK_DATA_PACKAGE	0.9	[D:user_package_type]#@##0#@##1	1
 INTENT_BOOK_DATA_PACKAGE	0.9	[D:kw_book]#@##0#@##1#@@##[D:kw_package]#@##0#@##0#@@##[D:user_package_type]#@##0#@##0#@@##[D:user_package_name]#@##0#@##0	1
 INTENT_CHECK_DATA_USAGE	0.9	[D:kw_check]#@##0#@##1#@@##[D:user_time]#@##0#@##0#@@##[D:kw_data_usage]#@##0#@##1	1

@@ -2,6 +2,7 @@
 /Makefile
 /brpc
 /_build
-.vscode
+/build
+/.vscode
 *.pyc
 .DS_Store

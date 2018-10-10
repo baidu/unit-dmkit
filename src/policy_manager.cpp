@@ -502,10 +502,10 @@ Policy* PolicyManager::find_best_policy(DomainPolicy* domain_policy,
 
     // Fallback policy when none of the policies match intent.
     if (policy_result == nullptr) {
-        const std::string fallback_intent = "system@reserved@domain_fallback_intent";
+        const std::string fallback_intent = "dmkit_intent_fallback";
         policy_vector_seek = intent_policy_map->seek(fallback_intent);
         if (policy_vector_seek != nullptr) {
-            APP_LOG(TRACE) << "system@reserved@domain_fallback_intent candidate count [" << (*policy_vector_seek)->size() << "]";
+            APP_LOG(TRACE) << "dmkit_intent_fallback candidate count [" << (*policy_vector_seek)->size() << "]";
             policy_result = find_best_policy_from_candidates(**policy_vector_seek, state, qu_slot_set);
         }
     }
@@ -599,6 +599,28 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
                                                    const RequestContext& context) {
     // Process parameters
     std::unordered_map<std::string, std::string> param_map;
+    // Default parameters
+    for (auto const& context: session.context) {
+        if (context.key == "dmkit_param_last_tts") {
+            param_map[context.key] =  context.value;
+            continue;
+        }
+        std::string param_key = "dmkit_param_context_";
+        param_key += context.key;
+        param_map[param_key] =  context.value;
+    }
+    for (auto const& slot: qu_result->slots()) {
+        std::string param_key = "dmkit_param_slot_";
+        param_key += slot.key();
+        if (param_map.find(param_key) == param_map.end()) {
+            continue;
+        }
+        std::string param_value = slot.normalized_value();
+        if (param_value.empty()) {
+            param_value = slot.value();
+        }
+        param_map[param_key] = param_value;
+    }
     for (auto const& param: policy->params()) {
         APP_LOG(TRACE) << "resolving parameter [" << param.name << "]";
         std::string value;
@@ -655,8 +677,16 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
                 }
                 value = param.default_value;
             }
-        } else if (param.type == "const_val") {
+        }else if (param.type == "const") {
             value = param.value;
+        } else if (param.type == "string") {
+            value = param.value;
+            if (!try_resolve_params(value, param_map)) {
+                if (param.required) {
+                    return nullptr;
+                }
+                value = param.default_value;
+            }
         } else if (param.type == "request_param") {
             const std::unordered_map<std::string, std::string> request_params = context.params();
             std::unordered_map<std::string, std::string>::const_iterator find_res
@@ -874,6 +904,28 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
     PolicyOutput* output_ptr = new PolicyOutput();
     *output_ptr = output;
     output_ptr->session.domain = domain;
+    
+    // Saved parameters
+    for (auto const& param: param_map) {
+        if (param.first.find("dmkit_param_context_") != 0) {
+            continue;
+        }
+        std::string context_key = param.first.substr(20);
+        if (context_key.empty()) {
+            continue;
+        }
+        KVPair context = {context_key, param.second};
+        output_ptr->session.context.push_back(context);
+    }
+    std::string first_tts;
+    for (unsigned int i = 0; i < output_ptr->results.size(); ++i) {
+        if (output_ptr->results[i].type == "tts") {
+            first_tts = output_ptr->results[i].values[0];
+            break;
+        }
+    }
+    KVPair last_tts_context = {"dmkit_param_last_tts", first_tts};
+    output_ptr->session.context.push_back(last_tts_context);
 
     return output_ptr;
 }

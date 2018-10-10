@@ -42,7 +42,7 @@ DM Kit依托UNIT提供的自然语言理解能力，在此基础上搭建对话B
 
 ### 垂类注册
 
-products.json为全局垂类注册配置文件，默认采用已"default"为key的配置项，该配置项中每个垂类已botid为key，注册添加垂类详细配置，配置字段解释如下：
+products.json为全局垂类注册配置文件，默认采用以"default"为key的配置项，该配置项中每个垂类已botid为key，注册添加垂类详细配置，配置字段解释如下：
 
 | 字段             |含义                         |
 |-----------------|-----------------------------|
@@ -56,7 +56,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 | 字段                             | 类型         |说明                            |
 |---------------------------------|--------------|-------------------------------|
 |trigger                          |object        | 触发节点，如果一个query满足多个policy的触发条件，则优先取status匹配的policy，再根据slot取覆盖个数最多的 |
-|+intent                          |string        | 触发所需NLU意图 |
+|+intent                          |string        | 触发所需NLU意图，意图由UNIT云端对话理解获得。此外，DM Kit定义了以下预留意图：<br>dmkit_intent_fallback： 当云端返回意图在DM Kit配置中未找到匹配policy时，DM Kit将尝试使用该意图触发policy |
 |+slot                            |list          | 触发所需槽位值列表|
 |+state                           |string        | 触发所需状态值，即上一轮对话session中保存的state字段值 |
 |params                           |list          | 变量列表 |
@@ -85,6 +85,7 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 | func_val | 调用开发者定义的函数。用户定义函数位于src/user_function目录下，并需要在user_function_manager.cpp文件中进行注册。value值为","连接的参数，其中第一个元素为函数名，第二个元素开始为函数参数 |
 | qu_intent | NLU结果中的intent值 |
 | session_state | 当前对话session中的state值 |
+| string | 字符串值，可以使用已定义变量进行模板填充 |
 
 特别的，开发者可以添加注册自定义函数，定义func_val类型的变量调用自定义函数实现功能扩展、定制化对话逻辑。DM Kit默认内置提供了包括以下函数：
 
@@ -92,8 +93,15 @@ products.json为全局垂类注册配置文件，默认采用已"default"为key�
 |----------------|--------------|----------------------|
 | service_http_get                   | 通过HTTP GET的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit"    |
 | service_http_post                  | 通过HTTP POST的方式请求知识库、第三方API等服务，服务地址需配置于conf/app/remote_services.json中。注意：如果请求路径包含中文，需要先对中文进行URL编码后再拼接URL     |参数1：remote_services.json中配置的服务名 <br>参数2：服务请求的路径，例如"/baidu/unit-dmkit" <br>参数3：POST数据内容   |
-| json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串 <br>参数2：所需获取的字段在json字符串中的路径|
+| json_get_value                     | 根据提供的路径从json字符串中获取对应的字段值       |参数1：json字符串 <br>参数2：所需获取的字段在json字符串中的路径。例如{"data":{"str":"hello", "arr":[{"str": "world"}]}}中路径data.str对应字段值为"hello", 路径data.arr.0.str对应字段值"world"。|
 | url_encode                         | 对输入字符串进行url编码操作       |参数1：进行编码的字符串|
+
+另外，DM Kit默认定义提供以下变量：
+| 变量名                           | 说明                                                                      |
+|---------------------------------|--------------------------------------------------------------------------|
+| dmkit_param_last_tts            | 上一轮返回结果result中第一个type为tts的元素value值，如果不存在则为空字符串         |
+| dmkit_param_context_xxxxx       | 上一轮session结果context中key为xxxx的值，同时如果用户定义了名为dmkit_param_context_xxxxx的变量，dmkit自动将该变量以xxxxx为key存入本轮session结果context|
+| dmkit_param_slot_xxxxx          | qu结果中tag为xxxxx的slot值, 如果存在多个相同tag的slot，则取第一个|
 
 #### result中assertion类型说明：
 
