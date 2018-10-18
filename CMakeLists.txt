@@ -14,10 +14,6 @@ protobuf_generate_cpp(PROTO_SRC PROTO_HEADER proto/http.proto)
 # include PROTO_HEADER
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-find_path(GPERFTOOLS_INCLUDE_DIR NAMES gperftools/heap-profiler.h)
-find_library(GPERFTOOLS_LIBRARIES NAMES tcmalloc_and_profiler)
-include_directories(${GPERFTOOLS_INCLUDE_DIR})
-
 find_path(BRPC_INCLUDE_PATH NAMES brpc/server.h)
 find_library(BRPC_LIB NAMES libbrpc.a brpc)
 if((NOT BRPC_INCLUDE_PATH) OR (NOT BRPC_LIB))
@@ -53,7 +49,6 @@ endif()
 
 set(CMAKE_CPP_FLAGS "${DEFINE_CLOCK_GETTIME} ${CMAKE_CPP_FLAGS} -DGFLAGS_NS=${GFLAGS_NS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CPP_FLAGS} -DNDEBUG -O2 -D__const__= -pipe -W -Wall -Wno-unused-parameter -fPIC -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBRPC_ENABLE_CPU_PROFILER")
 
 if(CMAKE_VERSION VERSION_LESS "3.1.3")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -123,7 +118,7 @@ include_directories(
 
 add_executable(dmkit ${DMKIT_SRC} ${PROTO_SRC} ${PROTO_HEADER})
 
-target_link_libraries(dmkit ${BRPC_LIB} ${DYNAMIC_LIB} ${GPERFTOOLS_LIBRARIES})
+target_link_libraries(dmkit ${BRPC_LIB} ${DYNAMIC_LIB})
 
 add_custom_command(
     TARGET dmkit POST_BUILD

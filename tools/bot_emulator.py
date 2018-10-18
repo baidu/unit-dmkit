@@ -60,7 +60,7 @@ def main(bot_id, token):
                 },
                 "updates": "",
                 "client_session": "{\"client_results\":\"\", \"candidate_options\":[]}",
-                "bernard_level": 0
+                "bernard_level": 1
             },
             "bot_session": session
         }

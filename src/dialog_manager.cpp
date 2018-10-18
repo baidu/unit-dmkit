@@ -288,6 +288,8 @@ int DialogManager::call_unit_bot(const std::string& access_token,
         payload
     };
     RemoteServiceResult rsr;
+    APP_LOG(TRACE) << "Calling unit bot service, url: "<< url;
+    APP_LOG(TRACE) <<  payload;
     // unit_bot is a remote service configured in conf/app/remote_services.json
     if (this->_remote_service_manager->call("unit_bot", rsp, rsr) !=0) {
         APP_LOG(ERROR) << "Failed to get unit bot result" ;
