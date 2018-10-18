@@ -316,7 +316,7 @@ int DialogManager::handle_unsatisfied_intent(rapidjson::Document& unit_response_
             "dm_session", dm_session_json, bot_session_doc.GetAllocator());
 
         std::string bot_session = utils::json_to_string(bot_session_doc);
-        unit_response_doc.AddMember("debug", bot_session_doc, unit_response_doc.GetAllocator());
+        //unit_response_doc.AddMember("debug", bot_session_doc, unit_response_doc.GetAllocator());
         unit_response_doc["result"]["bot_session"].SetString(
             bot_session.c_str(), bot_session.length(), unit_response_doc.GetAllocator());
         response = utils::json_to_string(unit_response_doc);
@@ -358,7 +358,7 @@ void DialogManager::set_dm_response(rapidjson::Document& unit_response_doc,
         custom_reply.c_str(), custom_reply.length(), unit_response_doc.GetAllocator());
 
     std::string bot_session = utils::json_to_string(bot_session_doc);
-    unit_response_doc.AddMember("debug", bot_session_doc, unit_response_doc.GetAllocator());
+    //unit_response_doc.AddMember("debug", bot_session_doc, unit_response_doc.GetAllocator());
     unit_response_doc["result"]["bot_session"].SetString(
         bot_session.c_str(), bot_session.length(), unit_response_doc.GetAllocator());
 }
