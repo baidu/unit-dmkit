@@ -175,7 +175,7 @@ int DialogManager::process_request(const rapidjson::Document& request_doc,
     std::string unit_bot_result;
     if (this->call_unit_bot(access_token, request_json, unit_bot_result) != 0) {
         APP_LOG(ERROR) << "Failed to call unit bot api";
-        json_response = get_error_response(-1, "Failed to get access token");
+        json_response = get_error_response(-1, "Failed to call unit bot api");
         return 0;
     }
     APP_LOG(TRACE) << "unit bot result: " << unit_bot_result;
@@ -186,7 +186,7 @@ int DialogManager::process_request(const rapidjson::Document& request_doc,
     if (unit_response_doc.Parse(unit_bot_result.c_str()).HasParseError()
             || !unit_response_doc.IsObject()) {
         APP_LOG(ERROR) << "Failed to parse unit bot result: " << unit_bot_result;
-        json_response = get_error_response(-1, "Failed to get access token");
+        json_response = get_error_response(-1, "Failed to parse unit bot result");
         return -1;
     }
     if (!unit_response_doc.HasMember("error_code")
