@@ -1,0 +1,301 @@
+[
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "请问您要预订哪里的酒店"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "001"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "{%location%}附近的酒店有{%hotel_option%}，请问你要预订哪一个？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "location", 
+        "type": "slot_val", 
+        "value": "user_location"
+      }, 
+      {
+        "name": "hotel_option", 
+        "type": "func_val", 
+        "value": "service_http_get:hotel_service,/hotel/search?location={%location%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type", 
+        "user_location"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "{%location%}附近的酒店有{%hotel_option%}，请问你要预订哪一个？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "003"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "location", 
+        "type": "slot_val", 
+        "value": "user_location"
+      }, 
+      {
+        "name": "hotel_option", 
+        "type": "func_val", 
+        "value": "service_http_get:hotel_service,/hotel/search?location={%location%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type", 
+        "user_location"
+      ], 
+      "state": "001"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您选择了{%time%}{%hotel%}的{%room_type%}，是否确认预订？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "hotel", 
+        "type": "slot_val", 
+        "value": "user_hotel"
+      }, 
+      {
+        "name": "room_type", 
+        "type": "slot_val", 
+        "value": "user_room_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type", 
+        "user_hotel"
+      ], 
+      "state": "001"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您选择了{%time%}{%hotel%}的{%room_type%}，是否确认预订？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "hotel", 
+        "type": "slot_val", 
+        "value": "user_hotel"
+      }, 
+      {
+        "name": "room_type", 
+        "type": "slot_val", 
+        "value": "user_room_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type", 
+        "user_hotel"
+      ], 
+      "state": ""
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "已为您预订{%time%}{%hotel%}的{%room_type%}"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "004"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "hotel", 
+        "type": "slot_val", 
+        "value": "user_hotel"
+      }, 
+      {
+        "name": "room_type", 
+        "type": "slot_val", 
+        "value": "user_room_type"
+      }, 
+      {
+        "name": "hotel_option", 
+        "type": "func_val", 
+        "value": "service_http_get:hotel_service,/hotel/book?time={%time%}&hotel={%hotel%}&room_type={%room_type%}"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_YES", 
+      "slots": [], 
+      "state": "002"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "请告诉我您的新需求"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "005"
+        }
+      }
+    ], 
+    "params": [], 
+    "trigger": {
+      "intent": "INTENT_NO", 
+      "slots": [], 
+      "state": "002"
+    }
+  }, 
+  {
+    "output": [
+      {
+        "assertion": [], 
+        "result": [
+          {
+            "type": "tts", 
+            "value": "您选择了{%time%}{%hotel%}的{%room_type%}，是否确认预订？"
+          }
+        ], 
+        "session": {
+          "context": {}, 
+          "state": "002"
+        }
+      }
+    ], 
+    "params": [
+      {
+        "name": "time", 
+        "type": "slot_val", 
+        "value": "user_time"
+      }, 
+      {
+        "name": "hotel", 
+        "type": "slot_val", 
+        "value": "user_hotel"
+      }, 
+      {
+        "name": "room_type", 
+        "type": "slot_val", 
+        "value": "user_room_type"
+      }
+    ], 
+    "trigger": {
+      "intent": "INTENT_BOOK_HOTEL", 
+      "slots": [
+        "user_time", 
+        "user_room_type", 
+        "user_location", 
+        "user_hotel"
+      ], 
+      "state": ""
+    }
+  }
+]

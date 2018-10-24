@@ -1,8 +1,17 @@
 {
     "default": {
-        "1234": {
+        "4050": {
             "score": 1,
             "conf_path": "conf/app/demo/cellular_data.json"
+        },
+        "1234": {
+            "score": 1,
+            "conf_path": "conf/app/demo/quota_adjust.json"
+        },
+        "11669": {
+            "score": 1,
+            "conf_path": "conf/app/demo/book_hotel.json"
         }
     }
 }
+

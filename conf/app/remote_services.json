@@ -19,5 +19,15 @@
         "retry": 1,
         "headers": {
         }
+    },
+    "hotel_service": {
+        "naming_service_url": "http://127.0.0.1:5000",
+        "load_balancer_name": "random",
+        "protocol": "http",
+        "client": "brpc",
+        "timeout_ms": 3000,
+        "retry": 1,
+        "headers": {
+        }
     }
 }
