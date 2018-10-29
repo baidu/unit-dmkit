@@ -2,13 +2,13 @@
 
 ## 查询流量及续订
 
-该场景实现一个简单的手机流量查询及续订流量包服务机器人。
+该场景实现一个简单的手机流量查询及续订流量包的技能。
 
 ### 查询流量及续订 - UNIT平台配置
 
 一共分为以下几个步骤：
 
-* 创建BOT
+* 创建技能
 * 配置意图
 * 配置词槽
 * 添加词槽的词典值
@@ -18,11 +18,11 @@
 #### 创建BOT
 
 1. 进入[百度理解与交互(unit)平台](http://ai.baidu.com/unit/v2#/sceneliblist)
-2. 新建一个BOT给查询流量及续订的demo使用。
+2. 新建一个技能给查询流量及续订的demo使用。
 
 #### 配置意图
 
-1. 点击进入BOT，新建对话意图，以INTENT_CHECK_DATA_USAGE为例。
+1. 点击进入技能，新建对话意图，以INTENT_CHECK_DATA_USAGE为例。
 2. 意图名称填写INTENT_CHECK_DATA_USAGE。
 3. 意图别名可以根据自己偏好填写，比如填写查询手机流量。
 4. 添加词槽。INTENT_CHECK_DATA_USAGE 所需的词槽为 user_time;
@@ -154,7 +154,7 @@
 #### 导入对话模板
 
 * 完成以上步骤后，再进行该步骤，不然系统会报错
-* 将文件demo_cellular_data_pattern.txt下载导入即可
+* 将文件[demo_cellular_data_pattern.txt](demo_cellular_data_pattern.txt)下载导入即可
 
 ### 查询流量及续订 - DM Kit配置
 
@@ -162,7 +162,7 @@
 
 ## 调整银行卡额度
 
-该场景实现一个简单的银行卡固定额度及临时额度调整机器人。
+该场景实现一个简单的银行卡固定额度及临时额度调整的技能。
 
 ### 调整银行卡额度 - UNIT平台配置
 
@@ -176,7 +176,7 @@
 
 词槽列表：
 
-* user_amount, 复用sys_num词槽
+* user_amount, 复用系统sys_num词槽
 
 * user_type
     ```text
@@ -246,8 +246,100 @@
 
 对话模板：
 
-* 将文件demo_quota_adjust_pattern.txt下载导入即可
+* 将文件[demo_quota_adjust_pattern.txt](demo_quota_adjust_pattern.txt)下载导入即可
 
 ### 调整银行卡额度 - DM Kit配置
 
 该场景DM Kit配置为conf/app/demo/quota_adjust.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
+
+## 预订酒店
+
+该场景实现一个简单的预订酒店的技能。
+
+### 预订酒店 - UNIT平台配置
+
+平台配置参考查询流量的配置，所需的配置内容见下图。
+
+所需意图包括列表：
+
+* INTENT_BOOK_HOTEL, 所需词槽为user_time, user_room_type, user_location, user_hotel
+* INTENT_YES
+* INTENT_NO
+
+词槽列表：
+
+* user_time, 复用系统sys_time词槽
+
+* user_room_type
+    ```text
+    标间
+    大床房
+    单人间
+    双人间
+    双床房
+    标准房
+    标准间
+    ```
+
+* user_hotel, 复用系统sys_loc_hotel词槽
+
+* user_hotel, 复用系统sys_loc词槽
+
+特征词列表：
+
+* kw_book
+    ```text
+    定
+    预定
+    订
+    预订
+    ```
+* kw_hotel
+    ```text
+    旅馆
+    酒店
+    ```
+
+* kw_yes
+    ```text
+    是
+    好
+    对
+    想
+    要
+    是的
+    好的
+    对的
+    我想
+    我要
+    可以
+    行的
+    没问题
+    确认
+    ```
+
+* kw_no
+    ```text
+    不
+    不想
+    不要
+    不对
+    不是
+    不用
+    不行
+    不可以
+    别
+    没
+    没有
+    没了
+    没有了
+    错了
+    ```
+
+对话模板：
+
+* 将文件[demo_book_hotel_pattern.txt](demo_book_hotel_pattern.txt)下载导入即可
+
+### 预订酒店 - DM Kit配置
+
+该场景DM Kit配置为conf/app/demo/book_hotel.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。

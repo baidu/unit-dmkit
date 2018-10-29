@@ -1,0 +1,4 @@
+INTENT_BOOK_HOTEL	0.8	[D:user_hotel]#@##0#@##1	1
+INTENT_YES	0.7	[D:kw_yes]#@##0#@##1	1
+INTENT_NO	0.7	[D:kw_no]#@##0#@##1	1
+INTENT_BOOK_HOTEL	0.7	[D:kw_book]#@##0#@##1#@@##[D:kw_hotel]#@##0#@##1#@@##[D:user_time]#@##0#@##0#@@##[D:user_room_type]#@##0#@##0#@@##[D:user_hotel]#@##0#@##0#@@##[D:user_location]#@##0#@##0	1

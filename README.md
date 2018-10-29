@@ -20,11 +20,11 @@ sh deps.sh [OS]
 mkdir _build && cd _build && cmake .. && make
 ```
 
-### 运行示例bot
+### 运行示例技能
 
-DM Kit提供了示例场景bot，在运行示例bot之前，需要在UNIT平台配置实现bot的理解能力：[示例场景](docs/demo_bots.md)
+DM Kit提供了示例场景技能，在运行示例技能之前，需要在UNIT平台配置实现技能的理解能力：[示例场景](docs/demo_skills.md)
 
-根据UNIT平台创建的bot id修改编译产出_build目录下的conf/app/products.json文件，在其中配置所创建bot id与对应场景DM Kit配置文件。例如，查询流量及续订场景，在UNIT平台创建bot id为12345，则对应的配置文件内容应为：
+根据UNIT平台创建的skill id修改编译产出_build目录下的conf/app/products.json文件，在其中配置所创建skill id与对应场景DM Kit配置文件。例如，查询流量及续订场景，在UNIT平台创建skill id为12345，则对应的配置文件内容应为：
 
 ```JSON
 {
@@ -43,10 +43,10 @@ DM Kit提供了示例场景bot，在运行示例bot之前，需要在UNIT平台�
 ./dmkit
 ```
 
-可以通过tools目录下的bot_emulator.py程序模拟与bot进行交互，使用方法为：
+可以通过tools目录下的bot_emulator.py程序模拟与技能进行交互，使用方法为：
 
 ```bash
-python bot_emulator.py [bot id] [access token]
+python bot_emulator.py [skill id] [access token]
 ```
 
 ### 更多文档
