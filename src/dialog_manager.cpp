@@ -307,7 +307,11 @@ int DialogManager::handle_unsatisfied_intent(rapidjson::Document& unit_response_
                                              const std::string& dm_session,
                                              std::string& response) {
     std::string action_type = unit_response_doc["result"]["response"]["action_list"][0]["type"].GetString();
-    if (action_type != "satisfy" && action_type != "understood") {
+    if (action_type == "satisfy") {
+        response = this->get_error_response(-1, "Unsupported action type satisfy");
+        return 0;
+    }
+    if (action_type != "understood") {
         // DM session should be saved
         rapidjson::Value dm_session_json;
         dm_session_json.SetString(
