@@ -40,6 +40,7 @@ int UserFunctionManager::init() {
     // Shared functions.
     (*_user_function_map)["json_get_value"] = user_function::json_get_value;
     (*_user_function_map)["replace"] = user_function::replace;
+    (*_user_function_map)["split_and_choose"] = user_function::split_and_choose;
     (*_user_function_map)["number_add"] = user_function::number_add;
     (*_user_function_map)["float_mul"] = user_function::float_mul;
     (*_user_function_map)["choose_if_equal"] = user_function::choose_if_equal;

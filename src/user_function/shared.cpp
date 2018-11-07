@@ -134,7 +134,7 @@ int json_get_value(const std::vector<std::string>& args,
 // args[1]: sub string to be replaced
 // args[2]: a new string to replace with
 int replace(const std::vector<std::string>& args,
-        const RequestContext& context, std::string& result) {
+            const RequestContext& context, std::string& result) {
     (void)context;
     if (args.size() != 3) {
         return -1;
@@ -150,6 +150,41 @@ int replace(const std::vector<std::string>& args,
     result = str;
     return 0;
 }
+
+// split string with delimiter and choose one element from resulting list
+// args[0]: string
+// args[1]: delimeter to split
+// args[2]: "random" to choose randomly or a number indicate the index to choose 
+int split_and_choose(const std::vector<std::string>& args,
+        const RequestContext& context, std::string& result) {
+    (void)context;
+    if (args.size() != 3) {
+        return -1;
+    }
+    std::string str = args[0];
+    std::string delimiter = args[1];
+    std::string choose = args[2];
+    std::vector<std::string> elements;
+    if (delimiter.length() != 1) {
+        APP_LOG(WARNING) << "Delimiter only support one character";
+        return -1;
+    }
+    
+    ::dmkit::utils::split(str, delimiter[0], elements);
+    if (elements.empty()) {
+        return -1;
+    }
+    int size = elements.size();
+    int index;
+    if (choose == "random") {
+        index = std::time(nullptr) % size;
+    } else if (!::dmkit::utils::try_atoi(choose, index) || index >= size) {
+            return -1;
+    }
+    result = elements[index];
+    return 0;
+}
+
 
 // Add all integer numbers supplied in args.
 int number_add(const std::vector<std::string>& args,

@@ -32,6 +32,10 @@ int replace(const std::vector<std::string>& args,
             const RequestContext& context,
             std::string& result);
 
+int split_and_choose(const std::vector<std::string>& args,
+                     const RequestContext& context,
+                     std::string& result);
+
 // Arithmetic Operations
 int number_add(const std::vector<std::string>& args,
                const RequestContext& context,
