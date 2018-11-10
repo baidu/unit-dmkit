@@ -325,6 +325,8 @@ int RemoteServiceManager::call_http_by_curl(const std::string& url,
     curl_slist_free_all(curl_headers);
     if(res != CURLE_OK) {
         APP_LOG(ERROR) << "curl failed, error: " << curl_easy_strerror(res);
+        curl_easy_cleanup(curl);
+        return -1;
     }
 
     double total_time;

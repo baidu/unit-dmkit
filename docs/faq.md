@@ -10,7 +10,8 @@ DM Kit通过UNIT云端技能解析出的用户query的意图和词槽之后，�
 
 ## 返回错误信息 Failed to call unit bot api
 
-DM Kit访问UNIT云端失败。具体原因需要查看DM Kit服务日志，常见原因是请求超时。对于请求超时的情况，先检查DM Kit所在服务器网络连接云端（默认地址为 aip.baidubce.com）是否畅通。如果连接没有问题，则尝试切换请求client：DM Kit默认使用BRPC client请求UNIT云端，目前发现偶然情况下HTTPS访问云端出现卡死而返回超时错误。DM Kit支持切换为curl方式访问云端，将remote_services.json配置中client值由brpc修改为curl即可。需要注意使用curl方式时，建议升级openssl版本不低于1.1.0，libcurl版本不低于7.32。
+DM Kit访问UNIT云端失败。具体原因需要查看DM Kit服务日志，常见原因是请求超时。
+对于请求超时的情况，先检查DM Kit所在服务器网络连接云端（默认地址为 aip.baidubce.com）是否畅通，尝试修改conf/app/remote_services.json文件中unit_bot服务对应超时时间。如果连接没有问题且增大超时时间无效，则尝试切换请求client：DM Kit默认使用BRPC client请求UNIT云端，目前发现偶然情况下HTTPS访问云端出现卡死而返回超时错误。DM Kit支持切换为curl方式访问云端，将conf/app/remote_services.json配置中client值由brpc修改为curl即可。需要注意使用curl方式时，建议升级openssl版本不低于1.1.0，libcurl版本不低于7.32。
 
 ## 返回错误信息 Unsupported action type satisfy
 
@@ -49,7 +50,7 @@ DM Kit访问UNIT云端失败。具体原因需要查看DM Kit服务日志，常�
       "result": [
         {
           "type": "tts",
-          "value": "{%answer%}"
+          "value": "{%faq_answer%}"
         }
       ]
     }
