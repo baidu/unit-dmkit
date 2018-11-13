@@ -268,9 +268,9 @@
 
 词槽列表：
 
-* user_time, 复用系统sys_time词槽
+* user_time, 复用系统sys_time词槽。需要设置为必填词槽，澄清话术配置为『请问您要预订哪一天的酒店？』
 
-* user_room_type
+* user_room_type。需要设置为必填词槽，澄清话术配置为『请问您要预订哪个房型？』
     ```text
     标间
     大床房
@@ -283,7 +283,7 @@
 
 * user_hotel, 复用系统sys_loc_hotel词槽
 
-* user_hotel, 复用系统sys_loc词槽
+* user_location, 复用系统sys_loc词槽
 
 特征词列表：
 

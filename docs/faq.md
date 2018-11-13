@@ -19,7 +19,7 @@ DM Kit访问UNIT云端失败。具体原因需要查看DM Kit服务日志，常�
 
 ## DM Kit如何支持FAQ问答对
 
-目前UNIT平台中将【对话回应】设置为【使用DM Kit配置】之后，如果对话触发了平台配置的FAQ问答集后，平台返回结果并不直接讲问答回复赋值给response中的say字段，但是开发者可以通过名为qid的词槽值中。因此，结合DM Kit配置可以从词槽qid解析出问答回复后进行返回。例如，平台创建问题意图FAQ_HELLO之后，可以在DM Kit对应技能的policy配置中添加一下policy支持FAQ_HELLO问答意图下的所有问答集：
+目前UNIT平台中将【对话回应】设置为【使用DM Kit配置】之后，如果对话触发了平台配置的FAQ问答集，平台返回结果不会将答案赋值给response中的say字段，但是会将答案赋值给名为qid的词槽值。因此，结合DM Kit配置可以从词槽qid解析出问答回复后进行返回。例如，平台创建问题意图FAQ_HELLO之后，可以在DM Kit对应技能的policy配置中添加一下policy支持FAQ_HELLO问答意图下的所有问答集：
 
 ```json
 {
