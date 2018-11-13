@@ -612,7 +612,7 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
     for (auto const& slot: qu_result->slots()) {
         std::string param_key = "dmkit_param_slot_";
         param_key += slot.key();
-        if (param_map.find(param_key) == param_map.end()) {
+        if (param_map.find(param_key) != param_map.end()) {
             continue;
         }
         std::string param_value = slot.normalized_value();
