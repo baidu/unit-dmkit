@@ -55,7 +55,7 @@ products.json为全局注册配置文件，默认采用以"default"为key的配�
 
 | 字段                             | 类型         |说明                            |
 |---------------------------------|--------------|-------------------------------|
-|trigger                          |object        | 触发节点，如果一个query满足多个policy的触发条件，则优先取status匹配的policy，再根据slot取覆盖个数最多的 |
+|trigger                          |object        | 触发节点，如果一个query满足多个policy的触发条件，则优先取state匹配的policy，再根据slot取覆盖个数最多的 |
 |+intent                          |string        | 触发所需NLU意图，意图由UNIT云端对话理解获得。此外，DM Kit定义了以下预留意图：<br>dmkit_intent_fallback： 当云端返回意图在DM Kit配置中未找到匹配policy时，DM Kit将尝试使用该意图触发policy |
 |+slot                            |list          | 触发所需槽位值列表|
 |+state                           |string        | 触发所需状态值，即上一轮对话session中保存的state字段值 |
