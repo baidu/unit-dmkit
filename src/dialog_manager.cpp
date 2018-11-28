@@ -114,6 +114,9 @@ int DialogManager::run(BRPC_NAMESPACE::Controller* cntl) {
         if (request_bot_session.empty()
                 || request_bot_session_doc.Parse(request_bot_session.c_str()).HasParseError()
                 || !request_bot_session_doc.IsObject()
+                || !request_bot_session_doc.HasMember("bot_id")
+                || !request_bot_session_doc["bot_id"].IsString()
+                || request_bot_session_doc["bot_id"].GetString() != bot_id
                 || !request_bot_session_doc.HasMember("session_id")
                 || !request_bot_session_doc.HasMember("dialog_state")
                 || !request_bot_session_doc["dialog_state"].HasMember("contexts")
