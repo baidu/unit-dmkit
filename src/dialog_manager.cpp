@@ -284,7 +284,7 @@ int DialogManager::process_request(const rapidjson::Document& request_doc,
 int DialogManager::call_unit_bot(const std::string& access_token,
                                          const std::string& payload,
                                          std::string& result) {
-    std::string url = "https://aip.baidubce.com/rpc/2.0/unit/bot/chat?access_token=";
+    std::string url = "/rpc/2.0/unit/bot/chat?access_token=";
     url += access_token;
     RemoteServiceParam rsp = {
         url,

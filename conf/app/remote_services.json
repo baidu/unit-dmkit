@@ -7,6 +7,7 @@
         "timeout_ms": 3000,
         "retry": 1,
         "headers": {
+            "Host": "aip.baidubce.com",
             "Content-Type": "application/json"
         }
     },
@@ -18,6 +19,7 @@
         "timeout_ms": 3000,
         "retry": 1,
         "headers": {
+            "Host": "aip.baidubce.com"
         }
     },
     "hotel_service": {

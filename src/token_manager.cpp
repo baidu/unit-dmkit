@@ -126,7 +126,7 @@ int TokenManager::update_token_cache(const std::string bot_id, const TokenValue 
 
 int TokenManager::get_token_from_remote(const ClientKey client_key, 
         const RemoteServiceManager* remote_service_manager, TokenValue& token_value) {
-    std::string url = "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials";
+    std::string url = "/oauth/2.0/token?grant_type=client_credentials";
     url += "&client_id=" + client_key.api_key + "&client_secret=" + client_key.secret_key;
     RemoteServiceParam rsp = {
         url,

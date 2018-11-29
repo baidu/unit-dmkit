@@ -22,7 +22,7 @@ if [ $OS = mac ]; then
     brew install openssl git gnu-getopt gflags protobuf leveldb cmake openssl
 elif [ $OS = ubuntu ]; then
     echo "Installing dependencies for Ubuntu..."
-    sudo apt-get install git \
+    sudo apt-get install -y git \
         g++ \
         make \
         libssl-dev \
@@ -37,9 +37,9 @@ elif [ $OS = ubuntu ]; then
         libgoogle-perftools-dev
 elif [ $OS = centos ]; then
     echo "Installing dependencies for CentOS..."
-    sudo yum install epel-release
-    sudo yum install git gcc-c++ make openssl-devel
-    sudo yum install gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
+    sudo yum install -y epel-release
+    sudo yum install -y git gcc-c++ make openssl-devel libcurl-devel
+    sudo yum install -y gflags-devel protobuf-devel protobuf-compiler leveldb-devel gperftools-devel
 else
     echo "Skipping dependencies installation..."
 fi
@@ -56,9 +56,11 @@ git checkout 2ae7f04ce513c6aee27545df49d5439a98ae3a3f
 
 #build brpc
 echo "Building brpc..."
+rm -rf _build
 mkdir -p _build
 cd _build
 cmake ..
 make -j$JOBS
 
 cd ../../
+
