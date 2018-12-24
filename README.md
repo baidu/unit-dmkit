@@ -55,6 +55,9 @@ python bot_emulator.py [skill id] [access token]
 * [可视化配置工具](docs/visual_tool.md)
 * [常见问题](docs/faq.md)
 
+### 多语言支持
+* PHP：[PHP版本官方代码库](https://github.com/baidu/dm-kit-php)
+
 ## 如何贡献
 
 * 提交issue可以是新需求也可以是bug，也可以是对某一个问题的讨论。
