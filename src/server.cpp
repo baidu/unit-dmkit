@@ -32,7 +32,7 @@ class HttpServiceImpl : public HttpService {
 public:
     HttpServiceImpl() {};
 
-    virtual ~HttpServiceImpl() {};
+    virtual ~HttpServiceImpl() noexcept {};
 
     int init() {
         return this->_app_container.load_application();

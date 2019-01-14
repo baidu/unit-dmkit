@@ -15,7 +15,7 @@
 #ifndef DMKIT_POLICY_MANAGER_H
 #define DMKIT_POLICY_MANAGER_H
 
-#include <atomic>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -62,6 +62,8 @@ public:
                           const PolicyOutputSession& session,
                           const RequestContext& context);
 
+    static int policy_conf_change_callback(void* param);
+
 private:
     DomainPolicyMap* load_domain_policy_map(const std::string& product_name,
                                              const rapidjson::Value& product_json);
@@ -83,22 +85,8 @@ private:
 
     ProductPolicyMap* load_policy_dict();
 
-    void reload_thread_func();
-
-    void destroy_policy_dict(ProductPolicyMap* policy_dict);
-
-    ProductPolicyMap* acquire_policy_dict();
-
-    void release_policy_dict(ProductPolicyMap* policy_dict);
-
     std::string _conf_file_path;
-    ProductPolicyMap* _dual_policy_dict[2];
-    int _policy_dict_ref_count[2];
-    int _current_policy_dict;
-    std::mutex _policy_dict_mutex;
-    std::atomic<bool> _destroyed;
-    std::thread _reload_thread;
-    std::string _conf_file_last_modified_time;
+    std::shared_ptr<ProductPolicyMap> _p_policy_dict;
 
     UserFunctionManager* _user_function_manager;
 };

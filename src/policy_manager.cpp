@@ -23,11 +23,10 @@
 #include <unistd.h>
 #include <utility>
 #include "app_log.h"
+#include "file_watcher.h"
 #include "utils.h"
 
 namespace dmkit {
-
-static const int POLICY_DICT_RELOAD_INTERVAL = 1000;
 
 DomainPolicy::DomainPolicy(const std::string& name, int score, IntentPolicyMap* intent_policy_map)
     : _name(name), _score(score), _intent_policy_map(intent_policy_map) {
@@ -73,10 +72,6 @@ IntentPolicyMap* DomainPolicy::intent_policy_map() {
 
 PolicyManager::PolicyManager() {
     this->_user_function_manager = nullptr;
-    this->_dual_policy_dict[0] = nullptr;
-    this->_dual_policy_dict[1] = nullptr;
-    this->_current_policy_dict = 0;
-    this->_destroyed = false;
 }
 
 PolicyManager::~PolicyManager() {
@@ -85,24 +80,35 @@ PolicyManager::~PolicyManager() {
         this->_user_function_manager = nullptr;
     }
 
-    this->_destroyed = true;
-    if (this->_reload_thread.joinable()) {
-        this->_reload_thread.join();
-    }
-    this->destroy_policy_dict(this->_dual_policy_dict[0]);
-    this->destroy_policy_dict(this->_dual_policy_dict[1]);
-    this->_dual_policy_dict[0] = nullptr;
-    this->_dual_policy_dict[1] = nullptr;
+    FileWatcher::get_instance().unregister_file(this->_conf_file_path);
+    this->_p_policy_dict.reset();
 }
 
-static int get_file_last_modified_time(const std::string& file_path, std::string& mtime_str) {
-    struct stat f_stat;
-    if (stat(file_path.c_str(), &f_stat) != 0) {
-        LOG(WARNING) << "Failed to get file modified time" << file_path;
-        return -1;
+static inline void destroy_policy_dict(ProductPolicyMap* policy_dict) {
+    LOG(TRACE) << "Destroying policy dict";
+    if (policy_dict == nullptr) {
+        return;
     }
-    mtime_str = ctime(&f_stat.st_mtime);
-    return 0;
+    for (ProductPolicyMap::iterator iter = policy_dict->begin(); iter != policy_dict->end();
+         ++iter) {
+        auto domain_policy_map = iter->second;
+        if (domain_policy_map == nullptr) {
+            continue;
+        }
+        for (DomainPolicyMap::iterator iter2 = domain_policy_map->begin();
+             iter2 != domain_policy_map->end(); ++iter2) {
+            auto domain_policy = iter2->second;
+            if (domain_policy == nullptr) {
+                continue;
+            }
+            delete domain_policy;
+            iter2->second = nullptr;
+        }
+        delete domain_policy_map;
+        iter->second = nullptr;
+    }
+    delete policy_dict;
+    policy_dict = nullptr;
 }
 
 // Loads policies from JSON configuration files.
@@ -119,17 +125,14 @@ int PolicyManager::init(const char* dir_path, const char* conf_file) {
     }
     this->_conf_file_path = file_path;
 
-    this->_dual_policy_dict[0] = this->load_policy_dict();
-    if (this->_dual_policy_dict[0] == nullptr) {
+    ProductPolicyMap* policy_dict = this->load_policy_dict();
+    if (policy_dict == nullptr) {
         APP_LOG(ERROR) << "Failed to init policy dict";
-        return -1;        
+        return -1;
     }
-    this->_current_policy_dict = 0;
-    this->_policy_dict_ref_count[0] = 0;
-    this->_policy_dict_ref_count[1] = 0;
-    get_file_last_modified_time(this->_conf_file_path, this->_conf_file_last_modified_time);
-    LOG(TRACE) << "Policy conf last modify time: " << this->_conf_file_last_modified_time;
-    this->_reload_thread = std::thread(&PolicyManager::reload_thread_func, this);
+    this->_p_policy_dict.reset(policy_dict, [](ProductPolicyMap* p) { destroy_policy_dict(p); });
+    FileWatcher::get_instance().register_file(
+        this->_conf_file_path, PolicyManager::policy_conf_change_callback, this, true);
 
     this->_user_function_manager = new UserFunctionManager();
     if (this->_user_function_manager->init() != 0) {
@@ -142,34 +145,38 @@ int PolicyManager::init(const char* dir_path, const char* conf_file) {
 
 int PolicyManager::reload() {
     LOG(TRACE) << "Reloading policy dict";
-    std::lock_guard<std::mutex> lock(this->_policy_dict_mutex);
-    int previous_policy_dict = 1 - this->_current_policy_dict;
-    if (this->_policy_dict_ref_count[previous_policy_dict] > 0) {
-        LOG(WARNING) << "Cannot reload policy! Previous policy dict still in use.";
-        return -1;
-    }
-    this->destroy_policy_dict(this->_dual_policy_dict[previous_policy_dict]);
-    this->_dual_policy_dict[previous_policy_dict] = this->load_policy_dict();
-    if (this->_dual_policy_dict[previous_policy_dict] == nullptr) {
+    ProductPolicyMap * policy_dict = this->load_policy_dict();
+    if (policy_dict == nullptr) {
         LOG(WARNING) << "Cannot reload policy! Policy dict load failed.";
         return -1;
     }
-    this->_current_policy_dict = previous_policy_dict;
-    LOG(TRACE) << "Reload finished";
+
+    this->_p_policy_dict.reset(policy_dict, [](ProductPolicyMap* p) { destroy_policy_dict(p); });
+    APP_LOG(TRACE) << "Reload finished.";
     return 0;
+}
+
+int PolicyManager::policy_conf_change_callback(void* param) {
+    PolicyManager* pm = (PolicyManager*)param;
+    return pm->reload();
 }
 
 PolicyOutput* PolicyManager::resolve(const std::string& product,
                                      BUTIL_NAMESPACE::FlatMap<std::string, QuResult*>* qu_result,
                                      const PolicyOutputSession& session,
                                      const RequestContext& context) {
-    ProductPolicyMap* product_policy_map = this->acquire_policy_dict();
-    DomainPolicyMap** seek_result = product_policy_map->seek(product);
-    if (seek_result == nullptr) {
-        APP_LOG(WARNING) << "unkown product " << product;
-        this->release_policy_dict(product_policy_map);
+    std::shared_ptr<ProductPolicyMap> p_policy_map(this->_p_policy_dict);
+    if (p_policy_map == nullptr) {
+        APP_LOG(ERROR) << "Policy resolve failed, empty policy dict";
         return nullptr;
     }
+
+    DomainPolicyMap** seek_result = p_policy_map->seek(product);
+    if (seek_result == nullptr) {
+        APP_LOG(WARNING) << "unkown product " << product;
+        return nullptr;
+    }
+
     DomainPolicyMap* domain_policy_map = *seek_result;
     DomainPolicy* state_domain_policy = nullptr;
     Policy* state_policy = nullptr;
@@ -229,12 +236,10 @@ PolicyOutput* PolicyManager::resolve(const std::string& product,
                 p.second, qu, session, context);
         if (result != nullptr) {
             APP_LOG(TRACE) << "Final result domain [" << domain_name << "]";
-            this->release_policy_dict(product_policy_map);
             return result;
         }
     }
 
-    this->release_policy_dict(product_policy_map);
     return nullptr;
 }
 
@@ -247,7 +252,7 @@ ProductPolicyMap* PolicyManager::load_policy_dict() {
     FILE* fp = fopen(this->_conf_file_path.c_str(), "r");
     if (fp == nullptr) {
         APP_LOG(ERROR) << "Failed to open file " << this->_conf_file_path;
-        this->destroy_policy_dict(product_policy_map);
+        destroy_policy_dict(product_policy_map);
         return nullptr;
     }
     char read_buffer[1024];
@@ -258,7 +263,7 @@ ProductPolicyMap* PolicyManager::load_policy_dict() {
 
     if (doc.HasParseError() || !doc.IsObject()) {
         APP_LOG(ERROR) << "Failed to parse products.json file";
-        this->destroy_policy_dict(product_policy_map);
+        destroy_policy_dict(product_policy_map);
         return nullptr;
     }
 
@@ -267,72 +272,19 @@ ProductPolicyMap* PolicyManager::load_policy_dict() {
         std::string prod_name = prod_iter->name.GetString();
         if (!prod_iter->value.IsObject()) {
             APP_LOG(ERROR) << "Invalid product conf for " << prod_name;
-            this->destroy_policy_dict(product_policy_map);
+            destroy_policy_dict(product_policy_map);
             return nullptr;
         }
         DomainPolicyMap* domain_policy_map = this->load_domain_policy_map(prod_name, prod_iter->value);
         if (domain_policy_map == nullptr) {
             APP_LOG(ERROR) << "Failed to load policies for product " << prod_name;
-            this->destroy_policy_dict(product_policy_map);
+            destroy_policy_dict(product_policy_map);
             return nullptr;
         }
         product_policy_map->insert(prod_name, domain_policy_map);
     }
 
     return product_policy_map;
-}
-
-void PolicyManager::destroy_policy_dict(ProductPolicyMap* policy_dict) {
-    if (policy_dict == nullptr) {
-        return;
-    }
-    for (ProductPolicyMap::iterator iter = policy_dict->begin();
-            iter != policy_dict->end(); ++iter) {
-        auto domain_policy_map = iter->second;
-        if (domain_policy_map == nullptr) {
-            continue;
-        }
-        for (DomainPolicyMap::iterator iter2 = domain_policy_map->begin();
-                iter2 != domain_policy_map->end(); ++iter2) {
-            auto domain_policy = iter2->second;
-            if (domain_policy == nullptr) {
-                continue;
-            }
-            delete domain_policy;
-            iter2->second = nullptr;
-        }
-        delete domain_policy_map;
-        iter->second = nullptr;
-    }
-    delete policy_dict;
-    policy_dict = nullptr;
-}
-
-ProductPolicyMap* PolicyManager::acquire_policy_dict() {
-    std::lock_guard<std::mutex> lock(this->_policy_dict_mutex);
-    this->_policy_dict_ref_count[this->_current_policy_dict]++;
-    return this->_dual_policy_dict[this->_current_policy_dict];
-}
-
-void PolicyManager::release_policy_dict(ProductPolicyMap* policy_dict) {
-    std::lock_guard<std::mutex> lock(this->_policy_dict_mutex);
-    if (this->_dual_policy_dict[0] == policy_dict) {
-        this->_policy_dict_ref_count[0]--;
-    } else if (this->_dual_policy_dict[1] == policy_dict) {
-        this->_policy_dict_ref_count[1]--;
-    }
-}
-
-void PolicyManager::reload_thread_func() {
-    while (!this->_destroyed) {
-        std::string last_modified_time;
-        get_file_last_modified_time(this->_conf_file_path, last_modified_time);
-        if (last_modified_time != this->_conf_file_last_modified_time && this->reload() == 0) {
-            LOG(TRACE) << "Policy conf last modify time: " << this->_conf_file_last_modified_time;
-            this->_conf_file_last_modified_time = last_modified_time;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(POLICY_DICT_RELOAD_INTERVAL));
-    }
 }
 
 DomainPolicyMap* PolicyManager::load_domain_policy_map(const std::string& product_name,
@@ -904,7 +856,7 @@ PolicyOutput* PolicyManager::resolve_policy_output(const std::string& domain,
     PolicyOutput* output_ptr = new PolicyOutput();
     *output_ptr = output;
     output_ptr->session.domain = domain;
-    
+
     // Saved parameters
     for (auto const& param: param_map) {
         if (param.first.find("dmkit_param_context_") != 0) {

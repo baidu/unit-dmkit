@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <ctime>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include "app_log.h"
@@ -36,23 +37,41 @@ struct TokenValue {
 
 };
 
+// Type for client key map.
+typedef std::unordered_map<std::string, ClientKey> ClientKeyMap;
+
+// A Manager class to manage and cache access token accessing unit bot api.
 class TokenManager {
 public:
     TokenManager();
+
     ~TokenManager();
 
+    // Initialization with a json configuration file.
     int init(const char* dir_path, const char* conf_file);
+
+    // Reload config.
+    int reload();
+
+    // Callback when conf change.
+    static int client_key_conf_change_callback(void* param);
+
+    // Get access token with bot id.
     int get_access_token(const std::string bot_id,
             const RemoteServiceManager* remote_service_manager, std::string& access_token);
 
 private:
     int get_token_from_cache(const std::string bot_id, TokenValue& token_value);
     int update_token_cache(const std::string bot_id, const TokenValue token_value);
-    
-    int get_token_from_remote(const ClientKey client_key, 
+
+    int get_token_from_remote(const ClientKey client_key,
             const RemoteServiceManager* remote_service_manager, TokenValue& token_value);
 
-    std::unordered_map<std::string, ClientKey>* _client_key_map;
+    ClientKeyMap* load_client_key_map();
+
+    std::string _client_key_conf_path;
+    std::shared_ptr<ClientKeyMap> _p_client_key_map;
+
     std::unordered_map<std::string, TokenValue>* _token_cache;
     std::mutex _token_cache_mutex;
 };

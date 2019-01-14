@@ -15,7 +15,9 @@
 #ifndef DMKIT_REMOTE_SERVICE_MANAGER_H
 #define DMKIT_REMOTE_SERVICE_MANAGER_H
 
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include "brpc.h"
@@ -25,8 +27,10 @@ namespace dmkit {
 
 enum HttpMethod {
     // Set to the same number as the method defined in baidu::rpc::HttpMethod
+    HTTP_METHOD_DELETE      =   0,
     HTTP_METHOD_GET         =   1,
     HTTP_METHOD_POST        =   3,
+    HTTP_METHOD_PUT         =   4
 };
 
 struct RemoteServiceParam {
@@ -58,6 +62,9 @@ struct RemoteServiceChannel {
     std::vector<std::pair<std::string, std::string>> headers;
 };
 
+// Type for channel map
+typedef std::unordered_map<std::string, RemoteServiceChannel> ChannelMap;
+
 // A configurable remote service manager class.
 // All remote service channels are created with configuration file
 // when initialization. Caller calls a remote service by supplying
@@ -70,6 +77,12 @@ public:
 
     // Initalization with a json configuration file.
     int init(const char *path, const char *conf);
+
+    // Reload config.
+    int reload();
+
+    // Callback when service conf changed.
+    static int service_conf_change_callback(void* param);
 
     // Call a remote service with specifid service name.
     int call(const std::string& servie_name,
@@ -97,10 +110,12 @@ private:
                           std::string& remote_side,
                           int& latency) const;
 
-    BUTIL_NAMESPACE::FlatMap<std::string, RemoteServiceChannel> _channel_map;
+    ChannelMap* load_channel_map();
+
+    std::string _conf_file_path;
+    std::shared_ptr<ChannelMap> _p_channel_map;
 };
 
 } // namespace dmkit
 
 #endif  //DMKIT_THREAD_DATA_BASE_H
-

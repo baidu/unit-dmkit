@@ -13,32 +13,40 @@
 // limitations under the License.
 
 #include "remote_service_manager.h"
-#include <cstdio>
 #include <curl/curl.h>
+#include <cstdio>
 #include <string>
 #include "app_log.h"
+#include "file_watcher.h"
 #include "rapidjson.h"
 #include "thread_data_base.h"
 
 namespace dmkit {
 
 RemoteServiceManager::RemoteServiceManager() {
-    // 10: bucket_count, initial count of buckets, big enough to avoid resize.
-    // 80: load_factor, element_count * 100 / bucket_count.
-    this->_channel_map.init(10, 80);
 }
 
 RemoteServiceManager::~RemoteServiceManager() {
-    for (BUTIL_NAMESPACE::FlatMap<std::string, RemoteServiceChannel>::iterator
-            iter = this->_channel_map.begin(); iter != this->_channel_map.end(); ++iter) {
-        if (nullptr != iter->second.channel) {
-            delete iter->second.channel;
-            iter->second.channel = nullptr;
-        }
-    }
+    FileWatcher::get_instance().unregister_file(this->_conf_file_path);
+    this->_p_channel_map.reset();
 }
 
-int RemoteServiceManager::init(const char *path, const char *conf) {
+static inline void destroy_channel_map(ChannelMap* p) {
+    APP_LOG(TRACE) << "Destroying service map...";
+    if (nullptr == p) {
+        return;
+    }
+    for (auto& channel : *p) {
+        if (nullptr != channel.second.channel) {
+            delete channel.second.channel;
+            channel.second.channel = nullptr;
+            APP_LOG(TRACE) << "Destroyed service" << channel.first;
+        }
+    }
+    delete p;
+}
+
+int RemoteServiceManager::init(const char* path, const char* conf) {
     std::string file_path;
     if (path != nullptr) {
         file_path += path;
@@ -49,157 +57,69 @@ int RemoteServiceManager::init(const char *path, const char *conf) {
     if (conf != nullptr) {
         file_path += conf;
     }
+    this->_conf_file_path = file_path;
 
-    FILE* fp = fopen(file_path.c_str(), "r");
-    if (fp == nullptr) {
-        APP_LOG(ERROR) << "Failed to open file " << file_path;
-        return -1;
-    }
-    char read_buffer[1024];
-    rapidjson::FileReadStream is(fp, read_buffer, sizeof(read_buffer));
-    rapidjson::Document doc;
-    doc.ParseStream(is);
-    fclose(fp);
-
-    if (doc.HasParseError() || !doc.IsObject()) {
-        APP_LOG(ERROR) << "Failed to parse RemoteServiceManager settings";
+    ChannelMap* channel_map = this->load_channel_map();
+    if (channel_map == nullptr) {
+        APP_LOG(ERROR) << "Failed to init RemoteServiceManager, cannot load channel map";
         return -1;
     }
 
-    rapidjson::Value::ConstMemberIterator service_iter;
-    for (service_iter = doc.MemberBegin(); service_iter != doc.MemberEnd(); ++service_iter) {
-        // Service name as the key for the channel.
-        std::string service_name = service_iter->name.GetString();
-        if (!service_iter->value.IsObject()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type object for service setting. Skipped...";
-            continue;
-        }
-        const rapidjson::Value& settings = service_iter->value;
-        rapidjson::Value::ConstMemberIterator setting_iter;
-        // Naming service url such as https://www.baidu.com.
-        // All supported url format can be found in BRPC docs.
-        setting_iter = settings.FindMember("naming_service_url");
-        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type String for property naming_service_url. Skipped...";
-            continue;
-        }
-        std::string naming_service_url = setting_iter->value.GetString();
-        // Load balancer name such as random, rr.
-        // All supported balancer can be found in BRPC docs.
-        setting_iter = settings.FindMember("load_balancer_name");
-        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type String for property load_balancer_name. Skipped...";
-            continue;
-        }
-        std::string load_balancer_name = setting_iter->value.GetString();
-        // Protocol for the channel.
-        // Currently we support http.
-        setting_iter = settings.FindMember("protocol");
-        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type String for property protocol. Skipped...";
-            continue;
-        }
-        std::string protocol = setting_iter->value.GetString();
-        // Client to use for sending request.
-        setting_iter = settings.FindMember("client");
-        std::string client;
-        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsString()) {
-            client = setting_iter->value.GetString();
-        }
-        // Timeout value in millisecond.
-        setting_iter = settings.FindMember("timeout_ms");
-        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsInt()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type Int for property timeout_ms. Skipped...";
-            continue;
-        }
-        int timeout_ms = setting_iter->value.GetInt();
-        // Retry count.
-        setting_iter = settings.FindMember("retry");
-        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsInt()) {
-            APP_LOG(ERROR) << "Invalid service settings for " << service_name
-                << ", expecting type Int for property retry. Skipped...";
-            continue;
-        }
-        int retry = setting_iter->value.GetInt();
-        // Headers for a http request.
-        std::vector<std::pair<std::string, std::string>> headers;
-        setting_iter = settings.FindMember("headers");
-        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsObject()) {
-            const rapidjson::Value& obj_headers = setting_iter->value;
-            rapidjson::Value::ConstMemberIterator header_iter;
-            for (header_iter = obj_headers.MemberBegin();
-                    header_iter != obj_headers.MemberEnd(); ++header_iter) {
-                std::string header_key = header_iter->name.GetString();
-                if (!header_iter->value.IsString()) {
-                    APP_LOG(ERROR) << "Invalid header value for " << header_key
-                        << ", expecting type String for header value. Skipped...";
-                        continue;
-                }
-                std::string header_value = header_iter->value.GetString();
-                headers.push_back(std::make_pair(header_key, header_value));
-            }
-        }
+    this->_p_channel_map.reset(channel_map,
+                               [](ChannelMap* p) { destroy_channel_map(p); });
 
-        BRPC_NAMESPACE::Channel* rpc_channel = nullptr;
-        if (protocol == "http") {
-            if (client.empty() || client == "brpc") {
-                rpc_channel = new BRPC_NAMESPACE::Channel();
-                BRPC_NAMESPACE::ChannelOptions options;
-                options.protocol = BRPC_NAMESPACE::PROTOCOL_HTTP;
-                options.timeout_ms = timeout_ms;
-                options.max_retry = retry;
-                rpc_channel->Init(naming_service_url.c_str(), load_balancer_name.c_str(), &options);
-            } else if (client == "curl") {
-                // curl does not need to init rpc channel
-            } else {
-                APP_LOG(ERROR) << "Unsupported client value [" << client << "], skipped...";
-                continue;
-            }
-        } else {
-            APP_LOG(ERROR) << "Unsupported protocol [" << protocol
-                << "] for service [" << service_name << "], skipped...";
-            continue;
-        }
-
-        RemoteServiceChannel service_channel {
-            .name = service_name,
-            .protocol = protocol,
-            .channel = rpc_channel,
-            .timeout_ms = timeout_ms,
-            .max_retry = retry,
-            .headers = headers
-        };
-        this->_channel_map.insert(service_name, service_channel);
-    }
+    FileWatcher::get_instance().register_file(
+        this->_conf_file_path, RemoteServiceManager::service_conf_change_callback, this, true);
 
     return 0;
+}
+
+int RemoteServiceManager::reload() {
+    APP_LOG(TRACE) << "Reloading RemoteServiceManager...";
+    ChannelMap* channel_map = this->load_channel_map();
+    if (channel_map == nullptr) {
+        APP_LOG(ERROR) << "Failed to reload RemoteServiceManager, cannot load channel map";
+        return -1;
+    }
+
+    this->_p_channel_map.reset(channel_map,
+                               [](ChannelMap* p) { destroy_channel_map(p); });
+    APP_LOG(TRACE) << "Reload finished.";
+    return 0;
+}
+
+int RemoteServiceManager::service_conf_change_callback(void* param) {
+    RemoteServiceManager* rsm = (RemoteServiceManager*)param;
+    return rsm->reload();
 }
 
 int RemoteServiceManager::call(const std::string& service_name,
                                const RemoteServiceParam& params,
                                RemoteServiceResult& result) const {
-    RemoteServiceChannel *service_channel = this->_channel_map.seek(service_name);
-    if (nullptr == service_channel) {
-        APP_LOG(ERROR) << "Remote service call failed. Cannot find service " << service_name;
+    std::shared_ptr<ChannelMap> p_channel_map(this->_p_channel_map);
+    if (p_channel_map == nullptr) {
+        APP_LOG(ERROR) << "Remote service call failed, channel map is null";
         return -1;
     }
+
+    if (p_channel_map->find(service_name) == p_channel_map->end()) {
+        APP_LOG(ERROR) << "Remote service call failed, cannot find service " << service_name;
+        return -1;
+    }
+
+    RemoteServiceChannel& service_channel = (*p_channel_map)[service_name];
 
     APP_LOG(TRACE) << "Calling service " << service_name;
 
     int ret = 0;
     std::string remote_side;
     int latency = 0;
-    if (service_channel->protocol == "http") {
-        if (service_channel->channel != nullptr) {
-            ret = this->call_http_by_BRPC_NAMESPACE(service_channel->channel,
+    if (service_channel.protocol == "http") {
+        if (service_channel.channel != nullptr) {
+            ret = this->call_http_by_BRPC_NAMESPACE(service_channel.channel,
                                           params.url,
                                           params.http_method,
-                                          service_channel->headers,
+                                          service_channel.headers,
                                           params.payload,
                                           result.result,
                                           remote_side,
@@ -207,16 +127,16 @@ int RemoteServiceManager::call(const std::string& service_name,
         } else {
             ret = this->call_http_by_curl(params.url,
                                           params.http_method,
-                                          service_channel->headers,
+                                          service_channel.headers,
                                           params.payload,
-                                          service_channel->timeout_ms,
-                                          service_channel->max_retry,
+                                          service_channel.timeout_ms,
+                                          service_channel.max_retry,
                                           result.result,
                                           remote_side,
                                           latency);
         }
     } else {
-        APP_LOG(ERROR) << "Remote service call failed. Unknown protocol" << service_channel->protocol;
+        APP_LOG(ERROR) << "Remote service call failed. Unknown protocol" << service_channel.protocol;
         ret = -1;
     }
     std::string log_str;
@@ -235,6 +155,155 @@ int RemoteServiceManager::call(const std::string& service_name,
     tls->add_notice_log(log_key, log_str);
 
     return ret;
+}
+
+ChannelMap* RemoteServiceManager::load_channel_map() {
+    APP_LOG(TRACE) << "Loading channel map...";
+    FILE* fp = fopen(this->_conf_file_path.c_str(), "r");
+    if (fp == nullptr) {
+        APP_LOG(ERROR) << "Failed to open file " << this->_conf_file_path;
+        return nullptr;
+    }
+    char read_buffer[1024];
+    rapidjson::FileReadStream is(fp, read_buffer, sizeof(read_buffer));
+    rapidjson::Document doc;
+    doc.ParseStream(is);
+    fclose(fp);
+
+    if (doc.HasParseError() || !doc.IsObject()) {
+        APP_LOG(ERROR) << "Failed to parse RemoteServiceManager settings";
+        return nullptr;
+    }
+
+    ChannelMap* channel_map = new ChannelMap();
+    rapidjson::Value::ConstMemberIterator service_iter;
+    for (service_iter = doc.MemberBegin(); service_iter != doc.MemberEnd(); ++service_iter) {
+        // Service name as the key for the channel.
+        std::string service_name = service_iter->name.GetString();
+        if (!service_iter->value.IsObject()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type object for service setting.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        const rapidjson::Value& settings = service_iter->value;
+        rapidjson::Value::ConstMemberIterator setting_iter;
+        // Naming service url such as https://www.baidu.com.
+        // All supported url format can be found in BRPC docs.
+        setting_iter = settings.FindMember("naming_service_url");
+        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type String for property naming_service_url.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        std::string naming_service_url = setting_iter->value.GetString();
+        // Load balancer name such as random, rr.
+        // All supported balancer can be found in BRPC docs.
+        setting_iter = settings.FindMember("load_balancer_name");
+        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type String for property load_balancer_name.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        std::string load_balancer_name = setting_iter->value.GetString();
+        // Protocol for the channel.
+        // Currently we support http.
+        setting_iter = settings.FindMember("protocol");
+        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsString()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type String for property protocol.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        std::string protocol = setting_iter->value.GetString();
+        // Client to use for sending request.
+        setting_iter = settings.FindMember("client");
+        std::string client;
+        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsString()) {
+            client = setting_iter->value.GetString();
+        }
+        // Timeout value in millisecond.
+        setting_iter = settings.FindMember("timeout_ms");
+        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsInt()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type Int for property timeout_ms.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        int timeout_ms = setting_iter->value.GetInt();
+        // Retry count.
+        setting_iter = settings.FindMember("retry");
+        if (setting_iter == settings.MemberEnd() || !setting_iter->value.IsInt()) {
+            APP_LOG(ERROR) << "Invalid service settings for " << service_name
+                << ", expecting type Int for property retry.";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+        int retry = setting_iter->value.GetInt();
+        // Headers for a http request.
+        std::vector<std::pair<std::string, std::string>> headers;
+        setting_iter = settings.FindMember("headers");
+        if (setting_iter != settings.MemberEnd() && setting_iter->value.IsObject()) {
+            const rapidjson::Value& obj_headers = setting_iter->value;
+            rapidjson::Value::ConstMemberIterator header_iter;
+            for (header_iter = obj_headers.MemberBegin();
+                    header_iter != obj_headers.MemberEnd(); ++header_iter) {
+                std::string header_key = header_iter->name.GetString();
+                if (!header_iter->value.IsString()) {
+                    APP_LOG(ERROR) << "Invalid header value for " << header_key
+                        << ", expecting type String for header value.";
+                    destroy_channel_map(channel_map);
+                    return nullptr;
+                }
+                std::string header_value = header_iter->value.GetString();
+                headers.push_back(std::make_pair(header_key, header_value));
+            }
+        }
+
+        BRPC_NAMESPACE::Channel* rpc_channel = nullptr;
+        if (protocol == "http") {
+            if (client.empty() || client == "brpc") {
+                rpc_channel = new BRPC_NAMESPACE::Channel();
+                BRPC_NAMESPACE::ChannelOptions options;
+                options.protocol = BRPC_NAMESPACE::PROTOCOL_HTTP;
+                options.timeout_ms = timeout_ms;
+                options.max_retry = retry;
+                int ret = rpc_channel->Init(naming_service_url.c_str(), load_balancer_name.c_str(), &options);
+                if (ret != 0) {
+                    APP_LOG(ERROR) << "Failed to init channel.";
+                    delete rpc_channel;
+                    destroy_channel_map(channel_map);
+                    return nullptr;
+                }
+            } else if (client == "curl") {
+                // curl does not need to init rpc channel
+            } else {
+                APP_LOG(ERROR) << "Unsupported client value [" << client << "].";
+                destroy_channel_map(channel_map);
+                return nullptr;
+            }
+        } else {
+            APP_LOG(ERROR) << "Unsupported protocol [" << protocol
+                << "] for service [" << service_name << "], skipped...";
+            destroy_channel_map(channel_map);
+            return nullptr;
+        }
+
+        RemoteServiceChannel service_channel {
+            .name = service_name,
+            .protocol = protocol,
+            .channel = rpc_channel,
+            .timeout_ms = timeout_ms,
+            .max_retry = retry,
+            .headers = headers
+        };
+        channel_map->insert({service_name, service_channel});
+        APP_LOG(TRACE) << "Loaded service " << service_name;
+    }
+
+    return channel_map;
 }
 
 int RemoteServiceManager::call_http_by_BRPC_NAMESPACE(BRPC_NAMESPACE::Channel* channel,

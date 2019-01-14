@@ -175,7 +175,7 @@ int split_and_choose(const std::vector<std::string>& args,
         return -1;
     }
     int size = elements.size();
-    int index;
+    int index = 0;
     if (choose == "random") {
         index = std::time(nullptr) % size;
     } else if (!::dmkit::utils::try_atoi(choose, index) || index >= size) {
