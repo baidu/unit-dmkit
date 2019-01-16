@@ -16,6 +16,7 @@
 #define DMKIT_FILE_WATCHER_H
 
 #include <atomic>
+#include <mutex>
 #include <thread>
 #include <string>
 #include <unordered_map>
