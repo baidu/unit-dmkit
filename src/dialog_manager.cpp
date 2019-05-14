@@ -122,7 +122,7 @@ int DialogManager::run(BRPC_NAMESPACE::Controller* cntl) {
                 || !request_bot_session_doc["dialog_state"].HasMember("contexts")
                 || !request_bot_session_doc["dialog_state"]["contexts"].HasMember("dmkit")
                 || !request_bot_session_doc["dialog_state"]["contexts"]["dmkit"].HasMember("session")) {
-            // Not a valid session from DM Kit
+            // Not a valid session from DMKit
             request_doc["bot_session"].SetString("", 0, request_doc.GetAllocator());
         } else {
             dm_session =

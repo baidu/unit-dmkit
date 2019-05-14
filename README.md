@@ -1,12 +1,12 @@
-# DM Kit
+# DMKit
 
-DM Kit作为UNIT的开源对话管理模块，可以无缝对接UNIT的理解能力，并赋予开发者多状态的复杂对话流程管理能力，还可以低成本对接外部知识库，迅速丰富话术信息量。
+DMKit作为UNIT的开源对话管理模块，可以无缝对接UNIT的理解能力，并赋予开发者多状态的复杂对话流程管理能力，还可以低成本对接外部知识库，迅速丰富话术信息量。
 
 ## 快速开始
 
-### 编译DM Kit
+### 编译DMKit
 
-DM Kit基于[brpc](https://github.com/brpc/brpc)开发并提供HTTP服务，支持MacOS，Ubuntu，Centos等系统环境，推荐使用Ubuntu 16.04或CentOS 7。在编译DM Kit之前，需要先安装依赖并下载编译brpc：
+DMKit基于[brpc](https://github.com/brpc/brpc)开发并提供HTTP服务，支持MacOS，Ubuntu，Centos等系统环境，推荐使用Ubuntu 16.04或CentOS 7。在编译DMKit之前，需要先安装依赖并下载编译brpc：
 
 ```bash
 sh deps.sh [OS]
@@ -14,7 +14,7 @@ sh deps.sh [OS]
 
 其中[OS]参数指定系统类型用于安装对应系统依赖，支持取值包括ubuntu、mac、centos。如果已手动安装依赖，则传入none。
 
-使用cmake编译DM Kit：
+使用cmake编译DMKit：
 
 ```bash
 mkdir _build && cd _build && cmake .. && make
@@ -22,9 +22,9 @@ mkdir _build && cd _build && cmake .. && make
 
 ### 运行示例技能
 
-DM Kit提供了示例场景技能，在运行示例技能之前，需要在UNIT平台配置实现技能的理解能力：[示例场景](docs/demo_skills.md)
+DMKit提供了示例场景技能，在运行示例技能之前，需要在UNIT平台配置实现技能的理解能力：[示例场景](docs/demo_skills.md)
 
-根据UNIT平台创建的skill id修改编译产出_build目录下的conf/app/products.json文件，在其中配置所创建skill id与对应场景DM Kit配置文件。例如，查询流量及续订场景，在UNIT平台创建skill id为12345，则对应的配置文件内容应为：
+根据UNIT平台创建的skill id修改编译产出_build目录下的conf/app/products.json文件，在其中配置所创建skill id与对应场景DMKit配置文件。例如，查询流量及续订场景，在UNIT平台创建skill id为12345，则对应的配置文件内容应为：
 
 ```JSON
 {
@@ -37,7 +37,7 @@ DM Kit提供了示例场景技能，在运行示例技能之前，需要在UNIT�
 }
 ```
 
-在_build目录下运行DM Kit：
+在_build目录下运行DMKit：
 
 ```bash
 ./dmkit
@@ -51,7 +51,7 @@ python bot_emulator.py [skill id] [access token]
 
 ### 更多文档
 
-* [DM Kit快速上手](docs/tutorial.md)
+* [DMKit快速上手](docs/tutorial.md)
 * [可视化配置工具](docs/visual_tool.md)
 * [常见问题](docs/faq.md)
 

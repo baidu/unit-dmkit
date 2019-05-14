@@ -1,4 +1,4 @@
-# DM Kit示例场景
+# DMKit示例场景
 
 ## 查询流量及续订
 
@@ -156,9 +156,9 @@
 * 完成以上步骤后，再进行该步骤，不然系统会报错
 * 将文件[demo_cellular_data_pattern.txt](demo_cellular_data_pattern.txt)下载导入即可
 
-### 查询流量及续订 - DM Kit配置
+### 查询流量及续订 - DMKit配置
 
-该场景DM Kit配置为conf/app/demo/cellular_data.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
+该场景DMKit配置为conf/app/demo/cellular_data.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
 
 ## 调整银行卡额度
 
@@ -248,9 +248,9 @@
 
 * 将文件[demo_quota_adjust_pattern.txt](demo_quota_adjust_pattern.txt)下载导入即可
 
-### 调整银行卡额度 - DM Kit配置
+### 调整银行卡额度 - DMKit配置
 
-该场景DM Kit配置为conf/app/demo/quota_adjust.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
+该场景DMKit配置为conf/app/demo/quota_adjust.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
 
 ## 预订酒店
 
@@ -340,6 +340,6 @@
 
 * 将文件[demo_book_hotel_pattern.txt](demo_book_hotel_pattern.txt)下载导入即可
 
-### 预订酒店 - DM Kit配置
+### 预订酒店 - DMKit配置
 
-该场景DM Kit配置为conf/app/demo/book_hotel.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
+该场景DMKit配置为conf/app/demo/book_hotel.json文件，该文件由同目录下对应的.xml文件生成，可以将.xml文件在 <https://www.draw.io> 中导入查看。
