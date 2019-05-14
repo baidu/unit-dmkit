@@ -16,7 +16,7 @@
 #
 
 """
-A mock server to provide api which DM Kit can access to retrieve resources
+A mock server to provide api which DMKit can access to retrieve resources
 
 """
 
