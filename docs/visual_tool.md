@@ -31,6 +31,8 @@
     ```
 该节点表示BOT应该执行的回复，同时节点中可以定义参数并对回复进行模板填充。
 
+在这里定义`dmkit_param_context_xxxx`变量时，dmkit自动将该变量以`xxxx`为key存入本轮session结果context。下一轮可以定义type=session_context，value=xxxx的变量来读取，也可以直接使用value={%dmkit_param_context_xxxx%}来获取，具体可参考[params类型及说明](tutorial.md#params中变量类型列表及其说明) 
+
 * 菱形，条件节点，在节点中可定义需要进行判断的变量:
     ```text
     PARAM:param_type:param_name1=param_value2
