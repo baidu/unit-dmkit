@@ -108,8 +108,8 @@ products.json为全局注册配置文件，默认采用以"default"为key的配�
 
 | type     |说明                                               |
 |----------|--------------------------------------------------|
-| empty    | value值非空                                       |
-| not_empty| value值为空                                       |
+| empty    | value值为空                                       |
+| not_empty| value值非空                                       |
 | in       | value值以","切分，第一个元素在从第二个元素开始的列表中   |
 | not_in   | value值以","切分，第一个元素不在从第二个元素开始的列表中 |
 | eq       |  value值以","切分，第一个元素等于第二个元素            |
